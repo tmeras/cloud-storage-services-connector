@@ -5,4 +5,4 @@ default:
 #	pdflatex thesis.tex
 
 clean:
-	rm -f *.aux modules/*aux *.dvi *.ent *.log *.bbl *.out *.blg *.upa *.upb
+	rm -f *.aux modules/*aux *.dvi *.ent *.log *.bbl *.out *.blg *.toc *.upa *.upb

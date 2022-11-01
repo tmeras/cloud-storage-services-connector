@@ -29,3 +29,9 @@ To generate the report use
 cd report
 make # the `Makefile` is provided
 ```
+
+To remove auto-generated files you can use
+
+```
+make clean
+```

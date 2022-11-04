@@ -1,65 +1,67 @@
 \chapter{Cloud Storage Services Comparison}
 
+
 \section{Introduction}
-Cloud storage solutions are rapidly rising in popularity among individuals and enterprises, as the benefits of using such services in day-to-day life and business become more and more evident. Cloud storage applications like Google Drive are used by almost 40\% of households in certain areas while, by 2025, 100 \textit{Zettabytes} of data (50\% of all data) will be stored in the cloud \cite{zeta}. 
+Cloud storage solutions are rapidly rising in popularity among individuals and enterprises, with the benefits of using such services in day-to-day life and business becoming more and more evident. Cloud storage applications like Google Drive are used by almost 40\% of households in certain areas while, by 2025, 100 \textit{Zettabytes} of data (50\% of all data) will be stored in the cloud~\cite{zeta}.
 
-Customers nowadays have dozens of options when it comes to storage providers, some of the most popular ones being established providers like Dropbox \cite{dropbox} and tech giants such as Amazon and Microsoft, which offer their \ac{s3} and Azure Blob services \cite{s3,blob}, respectively. All storage services, however, differ in certain characteristics like pricing, capacity and performance. It becomes important, then, to investigate these differences in order to make an educated decision on which service to adopt.
+Customers nowadays have dozens of options when it comes to storage providers. Some of the most popular ones are established providers like Dropbox~\cite{dropbox}, and tech giants such as Amazon and Microsoft, that offer their \ac{s3}~\cite{s3} and Azure Blob services~\cite{blob}, respectively. All storage services, however, differ in certain characteristics like pricing, capacity and performance. It becomes important, then, to investigate these differences in order to make an educated decision on which service to adopt.
 
-The first distinction that needs to be made is between cloud \textit{object} storage and cloud \textit{file} storage \cite{objectvsfile, objectvsfile2}: 
+The first distinction that needs to be made is between cloud \textit{object} storage and cloud \textit{file} storage~\cite{objectvsfile, objectvsfile2}:
 
-\begin{description}
-	\item[\textit{Object storage}] This technology allows data to be stored and managed in an unstructured format called \textit{objects}. Objects include the data that make up a file, user-created metadata and a unique identifier. They are stored in a flat data environment which enables fast scaling and application can easily retrieve objects of any data type, using the metadata and the identifier. 
-	
-	As businesses expand, they are tasked with handling larger and larger volumes of  data from a variety of sources that is used by both applications and users. This data is often unstructured and in many different formats and storage media, making it hard to store it in a central repository. Therefore, cloud object storage can solve this issue as it offers vast scalability and cost-efficient storage tiers for storing all kinds of data natively in a single virtual repository, accessible from anywhere. An example of cloud object storage is Amazon S3 \cite{s3}
-	
-	Some common use cases for object storage are:
-	\begin{itemize} 
-		\item[--] \textit{\textbf{Data lakes}}, which are centralized repositories for storing data of any scale, structured or unstructured, rely on object storage to operate.\cite{datalakes} They offer encryption, access control and great scalability, allowing for easy and dynamic storage expansion of up to petabytes of content with a pay-as-you-go charging model.
-		
-		\item[--]  The virtually limitless data that is stored in cloud object storage is often used by businesses to perform \textit{\textbf{big data analytics}}, in an effort to better understand their customers, operations and market.
-		
-		\item [--] Cloud object storage provide flexible data storage for \textit{\textbf{cloud-native applications}}, accessible via an API, thus aiding developers and allowing for easier and faster deployment.
-		
-		\item[--] An excellent use of object storage is \textbf{\textit{data archiving}}, replacing on-site archive infrastructure and providing enhanced data security, durability, accessibility and near-instant retrieval times. 
-		
-		\item [--] Object storage systems can used to replicate data across many  systems, regions and data centers, ensuring that \textbf{\textit{backups}} are ready to be used for recovery from hardware failures.
-		
-		\item [--] Replication on a global scale can be achieved with cloud object storage, vastly reducing the storage costs and increasing availability for \textit{\textbf{rich media}} like music, videos and digital images.  
-		
-		\item [--]  Since \textit{\textbf{ \ac{ml}}} models generate inferences after being trained over billions of data items, object storage becomes a necessity to handle such scale in a cost-efficient manner.
-	\end{itemize}
+\subsection{Object storage}
+This technology allows data to be stored and managed in an unstructured format called \textit{objects}. Objects include the data that make up a file, user-created metadata and a unique identifier. They are stored in a flat data environment which enables fast scaling and application can easily retrieve objects of any data type, using the metadata and the identifier.
 
-	\item[\textit{File Storage}] In contrast to object storage, file storage utilizes a hierarchical structure for storing data, where files are stored inside of folders which are grouped into directories and so on, and strict protocols like \ac{nfs} are used. Consequently, it is more difficult to locate a specific piece of data among billions, compared to object storage, where each object is uniquely identified. In addition, the inherent hierarchy and pathing limits the potential scalability of cloud file storage, whereas object storage provides near-limitless scaling.
-	
-	File synchronization is one of the major features that have contributed to the popularity of these systems. File storage allows users to automatically synchronize their files across a variety of devices, making it very convenient and simple to continue their work as they left it. Another popular use case of file storage collaborative work, as the most up-to-date version of a file can be easily shared among a group of users.\cite{personal1} The user interface and experience of cloud file storage services are also significantly more user-friendly, making them suitable for casual and experienced users alike. An example of cloud file storage is Dropbox. \cite{dropbox}
-\end{description}
+As businesses expand, they are tasked with handling larger and larger volumes of data from a variety of sources that is used by both applications and users. This data is often unstructured and in many different formats and storage media, making it hard to store it in a central repository. Therefore, cloud object storage can solve this issue as it offers vast scalability and cost-efficient storage tiers for storing all kinds of data natively in a single virtual repository, accessible from anywhere. An example of cloud object storage is Amazon S3~\cite{s3}
+
+Some common use cases for object storage are:
+\begin{itemize}
+    \item[--] \textit{\textbf{Data lakes}}, which are centralized repositories for storing data of any scale, structured or unstructured, and rely on object storage to operate~\cite{datalake}. They offer encryption, access control and great scalability, allowing for easy and dynamic storage expansion of up to petabytes of content with a pay-as-you-go charging model.
+
+    \item[--] The virtually limitless data that is stored in cloud object storage is often used by businesses to perform \textit{\textbf{big data analytics}}, in an effort to better understand their customers, operations and market.
+
+    \item [--] Cloud object storage provide flexible data storage for \textit{\textbf{cloud-native applications}}, accessible via an API, thus aiding developers and allowing for easier and faster deployment.
+
+    \item[--] An excellent use of object storage is \textbf{\textit{data archiving}}, replacing on-site archive infrastructure and providing enhanced data security, durability, accessibility and near-instant retrieval times.
+
+    \item [--] Object storage systems can used to replicate data across many systems, regions and data centers, ensuring that \textbf{\textit{backups}} are ready to be used for recovery from hardware failures.
+
+    \item [--] Replication on a global scale can be achieved with cloud object storage, vastly reducing the storage costs and increasing availability for \textit{\textbf{rich media}} like music, videos and digital images.
+
+    \item [--]  Since \textit{\textbf{\ac{ml}}} models generate inferences after being trained over billions of data items, object storage becomes a necessity to handle such scale in a cost-efficient manner.
+\end{itemize}
+
+\subsection{File Storage} In contrast to object storage, file storage utilizes a hierarchical structure for storing data, where files are stored inside of folders which are grouped into directories and so on, and strict protocols like \ac{nfs} are used. Consequently, it is more difficult to locate a specific piece of data among billions, compared to object storage, where each object is uniquely identified. In addition, the inherent hierarchy and pathing limits the potential scalability of cloud file storage, whereas object storage provides near-limitless scaling.
+
+File synchronization is one of the major features that have contributed to the popularity of these systems. File storage allows users to automatically synchronize their files across a variety of devices, making it very convenient and simple to continue their work as they left it. Another popular use case of file storage collaborative work, as the most up-to-date version of a file can be easily shared among a group of users~\cite{personal1}. The user interface and experience of cloud file storage services are also significantly more user-friendly, making them suitable for casual and experienced users alike. An example of cloud file storage is Dropbox~\cite{dropbox}.
+
+
 
 \section{Object Storage Services}
-Two of the most popular object storage services are Amazon \ac{s3} and Microsoft Azure Blob Storage. \cite{s3,blob}
+Two of the most popular object storage services are Amazon \ac{s3} and Microsoft Azure Blob Storage.
 
-In\textit{ \textbf{Amazon S3}}, objects are stored in buckets, and prefixes (shared names) are used to organize the latter. \textbf{S3 object tags}, which are a set of up to 10 key-value pairs, can also be appended to objects to make storage management easier, as these tags can be added and edited at any point in the object's lifetime for stronger access control and other use cases. In addition, \textbf{S3 inventory} reports can be generated manually or automatically to provide information on the objects in a bucket, to make working with lots of data easier and to allowing gather information on encryption, replication and more. Amazon provides an online Management Console, a \ac{rest} API, a \ac{cli} and a \ac{sdk} in various languages  for accessing S3 features. \cite{s3faq}
+In Amazon S3, objects are stored in buckets, and prefixes (shared names) are used to organize the latter. \textit{S3 object tags}, which are a set of up to 10 key-value pairs, can also be appended to objects to make storage management easier, as these tags can be added and edited at any point in the object's lifetime for stronger access control and other use cases. In addition, \textit{S3 inventory} reports can be generated manually or automatically to provide information on the objects in a bucket, to make working with lots of data easier and to allow gathering information on encryption, replication and more. Amazon provides an online Management Console, a \ac{rest} API, a \ac{cli} and an \ac{sdk} in various languages for accessing S3 features~\cite{s3faq}.
 
-\textbf{Microsoft Azure \textit{\textbf{Blob Storage}}} uses three types of related resources. The first are storage accounts, which provide a unique namespace for the user's data and is used in the address of each object. There are different kinds of storage accounts, each tailored for different uses and with different redundancy options: \cite{blobaccounts}
-
-\begin{enumerate}
-	\item \textit{General-purpose v2} is the standard account for storing blobs (data). It is recommended for most use cases.
-	
-	\item \textit{Premium block blobs}, for block blobs and append blobs. Makes use of \ac{ssd} technology, making it ideal for workloads that require low latency or that involve many transactions.
-	
-	\item Premium page blob, which is similar to a  premium block bob account, but it's only used for page blobs.
-\end{enumerate}
-
-Containers are the second resource, which organize a set of blobs. An unlimited number of containers can be included in a storage account, and an unlimited number fo blobs can be stored in a container. The third and final resource kind are blobs,of which there are three types:
+Microsoft Azure Blob Storage uses three types of related resources. The first are storage accounts, which provide a unique namespace for the user's data and is used in the address of each object. There are different kinds of storage accounts, each tailored for different uses and with different redundancy options~\cite{blobaccounts}:
 
 \begin{enumerate}
-	\item \textit{Block blobs} are made up of blocks of data, with each block being uniquely identified. Block blobs are ideal for large amounts of text or binary data, as up to 50.000 variable size blocks can be included in a single block blob.
-	
-	\item \textit{Append blocks} are also made up of blocks of data, but they are optimized for append operations, making them ideal for use cases like \ac{vm} data logging.
-	
-	\item \textit{Page blobs}  are composed of 512-byte pages and are suitable for random write and read operations. They support Azure virtual machines by acting as disks
+    \item \textit{General-purpose v2} is the standard account for storing blobs (data). It is recommended for most use cases.
+
+    \item \textit{Premium block blobs}, for block blobs and append blobs. Makes use of \ac{ssd} technology, making it ideal for workloads that require low latency or that involve many transactions.
+
+    \item \textit{Premium page blob}, which is similar to a premium block bob account, but it's only used for page blobs.
 \end{enumerate}
 
-As with S3, to help the management of large pools of data, Blob storage provides the ability to use \textbf{blob index tags}, key-value pairs that can be used to categorize blobs, find specific blobs across an entire account, set  permissions and more. With \textbf{Azure Cognitive Search}, blob content are imported as search documents that are indexed, allowing for the information stored in the blob data themselves to be searched. Also, with the help of \ac{ai} enrichment, text from images can be extracted. Furthermore,  \textbf{Blob inventory} automatically generates report with user-defined rules to provide an overview on containers, snapshots, blobs, blob versions and their properties. Blob storage object are accessible via REST API, Azure PowerShell (a set of cmdlets fo Azure resources)\cite{powershell}, CLI or a client library in one of many languages. \cite{blobinfo}
+Containers are the second resource, which organize a set of blobs. An unlimited number of containers can be included in a storage account, and an unlimited number of blobs can be stored in a container. The third and final resource kind are blobs, of which there are three types:
+
+\begin{enumerate}
+    \item \textit{Block blobs} are made up of blocks of data, with each block being uniquely identified. Block blobs are ideal for large amounts of text or binary data, as up to 50.000 variable size blocks can be included in a single block blob.
+
+    \item \textit{Append blocks} are also made up of blocks of data, but they are optimized for append operations, making them ideal for use cases like \ac{vm} data logging.
+
+    \item \textit{Page blobs}  are composed of 512-byte pages and are suitable for random write and read operations. They support Azure virtual machines by acting as disks.
+\end{enumerate}
+
+As with S3, to help the management of large pools of data, Blob storage provides the ability to use \textbf{blob index tags}, key-value pairs that can be used to categorize blobs, find specific blobs across an entire account, set permissions and more. With \textbf{Azure Cognitive Search}, blob content are imported as search documents that are indexed, allowing for the information stored in the blob data themselves to be searched. Also, with the help of \ac{ai} enrichment, text from images can be extracted. Furthermore, \textbf{Blob inventory} automatically generates report with user-defined rules to provide an overview on containers, snapshots, blobs, blob versions and their properties. Blob storage object are accessible via \{rest} API, Azure PowerShell (a set of cmdlets of Azure resources)~\cite{powershell}, CLI or a client library in one of many languages~\cite{blobinfo}.
 
 \subsection{Storage Classes}
 

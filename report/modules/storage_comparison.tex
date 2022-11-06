@@ -39,16 +39,24 @@ File synchronization is one of the major features that have contributed to the p
 \section{Object Storage Services}
 Two of the most popular object storage services are Amazon \ac{s3} and Microsoft Azure Blob Storage.
 
-In Amazon S3, objects are stored in buckets, and prefixes (shared names) are used to organize the latter. \textit{S3 object tags}, which are a set of up to 10 key-value pairs, can also be appended to objects to make storage management easier, as these tags can be added and edited at any point in the object's lifetime for stronger access control and other use cases. In addition, \textit{S3 inventory} reports can be generated manually or automatically to provide information on the objects in a bucket, to make working with lots of data easier and to allow gathering information on encryption, replication and more. Amazon provides an online Management Console, a \ac{rest} API, a \ac{cli} and an \ac{sdk} in various languages for accessing S3 features~\cite{s3faq}.
+In Amazon S3, objects are stored in buckets, and prefixes (shared names) are used to organize objects. \textit{S3 object tags}, which are a set of up to 10 key-value pairs, can also be appended to objects to make storage management easier, as these tags can be added and edited at any point in the object's lifetime for stronger access control and other use cases. In addition, \textit{S3 inventory} reports can be generated manually or automatically to provide information on the objects in a bucket, to make working with lots of data easier and to allow gathering information on encryption, replication and more. Amazon provides an online Management Console, a \ac{rest} API, a \ac{cli} and an \ac{sdk} in various languages for accessing S3 features~\cite{s3faq}.
 
 Microsoft Azure Blob Storage uses three types of related resources. The first are storage accounts, which provide a unique namespace for the user's data and is used in the address of each object. There are different kinds of storage accounts, each tailored for different uses and with different redundancy options~\cite{blobaccounts}:
 
 \begin{enumerate}
+
     \item \textit{General-purpose v2} is the standard account for storing blobs (data). It is recommended for most use cases.
 
     \item \textit{Premium block blobs}, for block blobs and append blobs. Makes use of \ac{ssd} technology, making it ideal for workloads that require low latency or that involve many transactions.
 
     \item \textit{Premium page blob}, which is similar to a premium block bob account, but it's only used for page blobs.
+
+	\item \textit{General-purpose v2} is the standard account for storing blobs (data). It is recommended for most use cases.
+	
+	\item \textit{Premium block blobs}, for block blobs and append blobs. Makes use of \ac{ssd} technology, making it ideal for workloads that require low latency or that involve many transactions.
+	
+	\item \textit{Premium page blob,} which is similar to a  premium block bob account, but it's only used for page blobs.
+
 \end{enumerate}
 
 Containers are the second resource, which organize a set of blobs. An unlimited number of containers can be included in a storage account, and an unlimited number of blobs can be stored in a container. The third and final resource kind are blobs, of which there are three types:
@@ -61,9 +69,122 @@ Containers are the second resource, which organize a set of blobs. An unlimited 
     \item \textit{Page blobs}  are composed of 512-byte pages and are suitable for random write and read operations. They support Azure virtual machines by acting as disks.
 \end{enumerate}
 
-As with S3, to help the management of large pools of data, Blob storage provides the ability to use \textbf{blob index tags}, key-value pairs that can be used to categorize blobs, find specific blobs across an entire account, set permissions and more. With \textbf{Azure Cognitive Search}, blob content are imported as search documents that are indexed, allowing for the information stored in the blob data themselves to be searched. Also, with the help of \ac{ai} enrichment, text from images can be extracted. Furthermore, \textbf{Blob inventory} automatically generates report with user-defined rules to provide an overview on containers, snapshots, blobs, blob versions and their properties. Blob storage object are accessible via \{rest} API, Azure PowerShell (a set of cmdlets of Azure resources)~\cite{powershell}, CLI or a client library in one of many languages~\cite{blobinfo}.
+As with S3, to help the management of large pools of data, Blob storage provides the ability to use \textbf{blob index tags}, key-value pairs that can be used to categorize blobs, find specific blobs across an entire account, set  permissions and more. With \textbf{Azure Cognitive Search}, blob content are imported as search documents that are indexed, allowing for the information stored in the blob data themselves to be searched. Also, with the help of \ac{ai} enrichment, text from images can be extracted. Furthermore,  \textbf{Blob inventory} automatically generates report with user-defined rules to provide an overview on containers, snapshots, blobs, blob versions and their properties. Blob storage object are accessible via REST API, Azure PowerShell (cmdlets fo Azure resources)~\cite{powershell}, CLI or a client library in one of many languages.~\cite{blobinfo}
+
+Both S3 and Blob Storage also provide\textbf{ monitoring and logging} for their resources to keep track of their performance, operation, cost efficiency and security and to receive alerts for specified events.  S3 has automatic (Cloudwatch Alarms and Cloudtrail Log Monitoring) and manual (S3 dashboard, AWS Trusted advisor and more) monitoring tools, while logging is possible via server access logs (for object-level operations) and API call logs with AWS CloudTrail (for bucket-level and object-level visibility). Azure Blob Storage works with Azure Monitoring (used for all Azure resources) for monitoring and logging purposes. ~\cite{s3monitoring,blobmonitoring} In addition, S3 offers even further enhanced storage visibility via S3 Storage Lens and S3 Storage Class Analysis. The former provides a single view of storage usage and activity patterns across potentially thousands of accounts at various levels and provides actionable recommendations for improving data protection and cost efficiency. At the same time, Storage Class Analysis helps in making the correct storage class transitions by monitoring object access patterns. ~\cite{s3analytics}
 
 \subsection{Storage Classes}
+Blob Storage and S3 both offer various storage classes to match the data access patterns and resiliency requirements of different workloads, at the lowest cost possible. 
 
+S3 makes the following distinctions regarding its storage classes: ~\cite{s3faq}
+\begin{description}
+	\item[S3 Standard] is recommended by Amazon for regularly accessed data, offering great performance, availability and durability for data that is regularly accessed. It is characterized by high throughput and low (millisecond) latency, making it ideal for big data analytic, gaming applications, content distribution and many more scenarios. In general, S3 classes allows the customers to make configurations at the object level, and a bucket can contain objects stored across different classes. 
+	
+	\item [S3 Standard-Infrequent Access (S3 Standard-IA)] is best used for less frequently accessed data, that nonetheless must be rapidly accessed when required. It is identical to standard S3 in terms of latency, throughput and durability, but with low price (in GB storage) and retrieval, meaning that it  is suitable for data to be stored long-term, for disaster recovery files and for backups. 
+	
+	\item[S3 One Zone-Infrequent Access (S3 One Zone-IA)] is identical to S3 Standard-IA, with the difference being that data is stored in one \ac{az}, instead of three like the other storage classes. This has the immediate effect of 20\% lowers costs, but if the single AZ is destroyed, all data will be lost along with it.
+	
+	\item[S3 Glacier] classes are tailor-made for archiving purposes, and there are three of them:
+	\begin{itemize}
+		\item [--] \textit{S3 Glacier Instant Retrieval} offers the lowest cost for storing data long-term which is rarely accessed and need to be retrieved in millisecond. If the data is accessed once every 4 months, around 70\% will be saved in storage costs when compared with S3 Standard-IA. This class is the fastest in accessing archived data, whilst having the same throughput performance and access latency as S3-standard, meaning that it is ideal for medical images, news media content and more data which is archived but need instant access.
+		
+		\item[--] \textit{S3 Glacier Flexible Retrieval}, which formerly was S3 Glacier, offers 10\% lower, compared to Glacier Instant Retrieval, costs for archived that is to be accessed once or twice per year and do not require immediate access. It balances costs and access times (can be from hours or minutes), making it ideal for use cases like disaster recovery and backups. 
+		
+		\item[--] \textit{S3 Glacier Deep Archive} offers the lowest storage costs in Amazon S3, used for retaining and preserving data long-term, which might be accessed 1 or 2 times per year. It offers retrieval times of up to 12 hours, and targets customers that need to retain data for many years to meet regulations, making it especially applicable for healthcare, public sector and other industries. It can also replace magnetic tape systems.
+	\end{itemize}
 
+	\item[S3 Intelligent-Tiering] automatically moves data to the access tier such that the costs will be minimized, with no impact in terms of performance, retrieval costs or operation. It charges a small fee every month for monitoring and automatically moving objects, but can lead to immense cost savings. If an objects hasn't been accessed for 30 or 90 days, it is moved automatically to the Infrequent and Archive Instant Access tier, respectively. If the user does not require immediate retrieval, object can be automatically moved to the deep Archive Tier after not being accessed for 180 days. Of course, if an object in one of these tiers is accessed, then it reverts to the frequently accessed tiers, but objects in Deep Archive first need to be restored (three options exists for archive retrieval, with different access times for each). ~\cite{archiverestore} This class is ideal for data with access patterns that are not known or that are unstable.
+
+	\item[S3 Outposts] provides on-premise objects storage, which is useful for data that needs to be stored locally to meet performance, processing or residency requirements, while also taking advantage of S3 features offered on the cloud, as the same APIs are used.
+\end{description}
+
+S3 also provides object\textbf{ Lifecycle management}, which allows for defining an object's lifecycle with a policy to automatically migrate objects from the S3 standard class to others, thus saving on storage costs and accommodating different access patterns. Most transitions between classes are supported, but there are exceptions because, for instance, an object can't be transitioned to S3 standard from any other class. Furthermore,  policies can be set to automatically remove objects and incomplete multipart uploads according to their age, which saves in storage costs and time. Lifecycle rules  allow for great configuration, as they can be used in conjunction with prefixes to, for example, discard specific objects after a certain number of days has passed. ~\cite{s3lifecycle}
+
+\bigskip
+ Blob Storage offers its own access tiers: ~\cite{blobinfo}
+ \begin{description}
+ 	\item[Hot Tier] is used for storing data online that is actively used or that will be accessed regularly.  It is the costliest for storing data, but the cheapest for accessing it.
+ 	
+ 	\item[Cool Tier] also stores data online, but the data is to be accessed less frequently (short-term backups are example use cases). This tier has the same access latency, durability, and throughout performance as the hot tier, but slightly  lower availability. It also has higher access costs, but lower storage costs overall, hence why it is ideal for data that isn't very frequently used.
+ 	
+ 	\item[Archive Tier] is the offline tier offered by by Blob Storage, ideal for storing data that is only rarely accessed. It offers the lowest overall storage costs, but higher latency and retrieval costs when compared to the online tiers. This tier is suitable for scenarios like long-term backups and archival data which is very infrequently accessed. However, it must be mentioned that, depending on redundancy configurations, not all accounts are allowed to move blobs to the archive tier and archived blobs cannot be read or modified, so they must be first rehydrated from the Archive tier. Rehydration is possible by either changing the blob's access tier to either hot or cold, or by copying it to one of those tiers. The time required fo rehydration depends on the priority, as standard priority rehydration may take 15 hours for objects of under 10 GB in size, whereas high priority rehydration could complete in under an hour.
+ \end{description}
+
+Changing a blob's access tier is possible by manually setting the blob tier or by copying the blob to another tier. The former is recommended as it avoids the early deletion penalty which, in the case of cold tier blobs, incurs a charge if a blob is deleted or moved to a different tier less than 30 days after being created. S3 also has a similar penalty for its classes.  Like S3, Blob Storage allows for \textbf{Lifecycle Management}, providing the opportunity to set cost-efficient policies with rules that specify when data should be transitioned to another tier, according to access patterns, and when objects should be expired, according to age. 
+
+So, when compared to S3, Azure Blob offers less options in terms of storage classes (e.g. there's no equivalent to S3's Outposts and Intelligent-Tiering), and places more restrictions on archived data.
+
+\subsection{Data Redundancy}
+Amazon Simple Storage Service strengthens data redundancy thanks to \textbf{S3 Replication}, for which 3 different options exist: ~\cite{s3replication}
+\begin{itemize}
+	\item [--] \textit{S3 \ac{crr}} can be used to replicate along with their tag and metadata to other AWS regions. This helps with compliance requirements for storing data at great distances,latency minimization by maintaining data close to customers, disaster recovery and more.
+	
+	\item [--] \textit{S3 \ac{srr}} replicates data between buckets, but only within the same region. Example use cases include aggregating data (e.g. logs) in a single location for processing or abiding by legal requirements that require data to be kept in another AWS account in the same region.
+	
+	\item [--] \textit{S3 Batch Replication} is unique as it replicate existing objects, instead of newly created ones like CRR and SRR do. So, it complements the other replication methods and can be used  for instance to reattempt failed replications or to migrate existing objects to other buckets.
+\end{itemize}
+
+Another S3 feature is \textbf{Replication Time Control}, which is backed by a \ac{sla} and claims that, during nay month, 99.99\% of objects will be replicated within 15 minutes, otherwise Service Credits will be provided to the customer as compensation.~\cite{s3replicationsla} 
+
+S3 allows replication to happen at a bucket level, a shared prefix level or an object level (using object tags) with multiple destination buckets in the same or different regions and even two-way replication among buckets is possible. On top of all this, \textbf{S3 Multi-Region Access Points} can vastly boost performance (up to 60\%) as it automatically routes requests to the copy with the lower latency, taking into account  location,  network congestion etc. It can be used in unison with CRR to allow for a single endpoint for all replicas, hence simplifying management. ~\cite{s3replication}
+
+According to Amazon, S3 storage classes (except Outposts and S3 One Zone-IA) redundantly store data across 3 AZs (at least), thus attaining 11 9's (99.99999999999\%) of objects durability for a given year, meaning that with 10 million objects stored, one will be lost every 10 thousand years. S3 Outposts enforce durability by redundantly storing data across devices within the on-premises data center, while S3 One Zone-IA does the same but within a single AZ. 
+
+\bigskip
+In the primary region, Azure Blob always replicate data three times and 2 redundancy options are provided:~\cite{blobinfo}
+\begin{itemize}
+	\item [--] \textit{\ac{lrs}} synchronously copies data in a primary region data center. It is the cheapest but least durable option (at least 11 9s), as if some sort of disaster occurs in the data center all copies will be lost. It could be useful for abiding to requirements that restring data to only a single region, or for data that can be easily reconstructed after loss.
+	
+	\item[--] \textit{\ac{zrs}} also synchronously replicates data in the primary region, but across different Azure availability zones (physical locations), hence attaining at least 12 9's of storage durability, so it is a better choice for high durability requirements, although region-wide disasters might still lead to data loss.
+\end{itemize}
+
+Microsoft also allows and recommend replicating data to a secondary region far from the primary region in order to survive regional disasters. There exist two options for secondary region redundancy:
+\begin{itemize}
+	\item [--]  \textit{\ac{grs}} first uses LRS for the primary region, and then asynchronously replicates the data in a secondary region , where again LRS is used. It claims significantly higher durability (at least 16 9's) during a year.
+	
+	\item [--] \textit{\ac{gzrs}} is the most robust replication option. It is identical to GRS, with the only (significant) difference being that ZRS is used initially, instead of LRS. This results in the combined benefits of both high availability in the primary zone (ZRS) and protection against a regional disaster (geo-replication). It provides 16 9's of durability or more yearly.
+\end{itemize}
+It should be noted that data stored in secondary regions is normally only accessible after an outage renders the primary region unavailable, and the asynchronous replication leads to the secondary region being slightly outdated. The option, however, exists to allow reading data in the secondary region via the \ac{ra-grs} or \ac{ra-gzrs} configurations.
+
+In general, compared to S3, Blob Storage could prove to be more affordable via LRS (if high availability and durability is not a major concern) and better durability is promised (16 9's vs 11 9's of S3). However blob storage also has drawbacks, as  for example redundancy settings are account-wide while S3 allows for even object-level specification, and there is no SLA backing replication speed as in S3 Replication Time Control.
+
+\subsection{Availability}
+With the S3 SLA, a commitment is made by Amazon to maintain a specific uptime percentage for its services every month.\cite{s3sla} If lower than promised availability for a service is observed during a month (exceptions apply for unusual situations like natural disasters), then customers are entitled to Service Credits which can be applied against future payments towards that service. The percentage of charges for a billing cycle that service credits cover is based on table \ref{S3 SLA}.
+
+\begin{table}[h]
+	\resizebox{\textwidth}{!}{%
+		\begin{tabular}{cll}
+			\hline
+			\multicolumn{1}{l}{\textbf{Service Credit \%}} &
+			\multicolumn{1}{c}{\textbf{\begin{tabular}[c]{@{}c@{}}Standard/ Glacier/ \\ Glacier Deep Archive\end{tabular}}} &
+			\multicolumn{1}{c}{\textbf{\begin{tabular}[c]{@{}c@{}}Intelligent-Tiering/ Standard-IA/\\ One Zone-IA/ Glacier Instant Retrieval\end{tabular}}} \\ \hline
+			\multicolumn{1}{c|}{10\%}  & \textless 99.9\% and \textgreater{}= 99\% uptime & \textless 99\% and \textgreater{}= 98\% uptime  \\ \hline
+			\multicolumn{1}{c|}{25\%}  & \textless{}99\% and \textgreater{}= 95\% uptime  & \textless{}98\% and \textgreater{}= 95\% uptime \\ \hline
+			\multicolumn{1}{c|}{100\%} & \textless{}95\% uptime                           & \textless{}95\% uptime                         
+		\end{tabular}%
+	}\caption{\label{S3 SLA}S3 Availability SLA}
+\end{table}
+
+Blob Storage also provides an availability SLA \cite{blobsla}, again offering credits as compensation for lower-than-expected uptime.(table \ref{Blob SLA})
+\begin{table}[h]
+	\resizebox{\textwidth}{!}{%
+		\begin{tabular}{clll}
+			\hline
+			\multicolumn{1}{l}{\textbf{Service Credit \%}} &
+			\multicolumn{1}{c}{\textbf{Hot Blobs}} &
+			\multicolumn{1}{c}{\textbf{Cool Blobs}} &
+			\multicolumn{1}{c}{\textbf{Archive Blobs}} \\ \hline
+			\multicolumn{1}{c|}{10\%} &
+			\begin{tabular}[c]{@{}l@{}}\textless{}99.9\% write requests \\ in LRS, ZRS, GRS, RA-GRS\\ \\ \textless{}99.99\% read requests\\  in RA-GRS\end{tabular} &
+			\begin{tabular}[c]{@{}l@{}}\textless{}99\% write requests \\ in LRS, GRS, RA-GRS\\ \\ \textless{}99.9\% read requests \\ in RA-GRS\end{tabular} &
+			\begin{tabular}[c]{@{}l@{}}\textless{}99\% write requests \\ in LRS, GRS, RA-GRS\\ \\ \textless{}99.9\% read requests \\ in RA-GRS\end{tabular} \\ \hline
+			\multicolumn{1}{c|}{25\%} &
+			\begin{tabular}[c]{@{}l@{}}\textless{}99\% write requests\\ in LRS, ZRS, GRS, RA-GRS\\ \\ \textless{}99\% read requests \\ in RA-GRS\end{tabular} &
+			\begin{tabular}[c]{@{}l@{}}\textless{}98\% write requests\\  in LRS, GRS, RA-GRS\\ \\ \textless{}98\% read requests \\ in RA-GRS\end{tabular} &
+			\begin{tabular}[c]{@{}l@{}}\textless{}98\% write requests \\ in LRS, GRS, RA-GRS\\ \\ \textless{}98\% read requests\\  in RA-GRS\end{tabular}
+		\end{tabular}%
+	}\caption{\label{Blob SLA}Blob Storage Availability SLA}
+\end{table}
+
+S3 and Blob Storage promise similar availability, with the main differences being that Blob Storage specifies availability for reads and writes, while S3 offers full (100\% Service Credit) compensation if availability is significantly low.
 \section{Conclusions}

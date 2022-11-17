@@ -259,4 +259,26 @@ Blob Storage offers its own range of options for authorizing data access: \cite{
 
 Taking everything into consideration, both S3 and Blob Storage have made great efforts for enforcing access control, however S3 offers a bit more in terms of options as for example Blob Storage does not support resource-based policies.
 
+\subsection{Data Protection}
+To protect data from accidental deletions or modifications, and to recover from any such accidents, S3 uses the following mechanisms: \cite{s3faq}
+
+\begin{enumerate}
+	\item \textit{Versioning}, once enabled for a bucket, preserves all object versions and allows for easy recovery from accidental deletions and overwrites, by rolling back to any previous version. Versioning can be used in conjunction with S3 lifecycle rules to maintain a rollback window for objects and, for example, store older object versions in a cheaper storage class and automatically delete them after a specified time period has elapsed. This cuts down on costs while also providing a recovery window to previous versions. for even further data protection, MFA Delete can be enabled to add another layer of security, requiring MFA on top of account credentials in order to permanently delete an object version.
+	
+	\item \textit{S3 Object Lock} prevents object version deletion and overwrite until a specified amount of time has passed, or until a legal hold is lifted, regardless of storage class or lifecycle transitions used. Object Lock can be enabled at the bucket or object level, and helps in complying with regulations enforcing  \ac{worm} data protection.
+\end{enumerate}
+
+
+Azure Blob also provides comparable data protection options:\cite{blob_data_protection}
+
+\begin{enumerate}
+	\item \textit{Storage account locks} can prevent accounts from being deleted (CannotDelete lock)  and their configurations from being modified (ReadOnly lock)
+	
+	\item \textit{Immutability policies} can be applied to data, maintaining them in a WORM state for a specified interval or until a legal hold is removed. Immutability policies can be applied at the version-level, but only after a default policy has been configured at the account- or container-level. Immutability policies can also be applied at the container-level, in which case the same policy applies for all objects in that container.
+	
+	\item \textit{Soft delete} retains blobs or containers that have been deleted or overwritten for a specified time period, after which the deletion is permanent.
+	
+	\item \textit{Blob versioning} maintains previous states (versions) of a blob, which can be used for recovery purposes.  \textit{Point-in-time restore} is similar to versioning, but is only used for block blobs. A cheaper alternative is \textit{blob snapshots}, which allow users to manually saving states when needed, hence cutting down on costs, however \textit{snapshots }are deleted when the objects themselves are deleted.
+\end{enumerate}
+
 \section{Conclusions}

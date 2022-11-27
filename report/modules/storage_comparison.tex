@@ -259,6 +259,7 @@ Blob Storage offers its own range of options for authorizing data access: \cite{
 
 Taking everything into consideration, both S3 and Blob Storage have made great efforts for enforcing access control, however S3 offers a bit more in terms of options as for example Blob Storage does not support resource-based policies.
 
+
 \subsection{Data Protection}
 To protect data from accidental deletions or modifications, and to recover from any such accidents, S3 uses the following mechanisms: \cite{s3faq}
 
@@ -280,5 +281,117 @@ Azure Blob also provides comparable data protection options:\cite{blob_data_prot
 	
 	\item \textit{Blob versioning} maintains previous states (versions) of a blob, which can be used for recovery purposes.  \textit{Point-in-time restore} is similar to versioning, but is only used for block blobs. A cheaper alternative is \textit{blob snapshots}, which allow users to manually saving states when needed, hence cutting down on costs, however \textit{snapshots }are deleted when the objects themselves are deleted.
 \end{enumerate}
+
+
+\subsection{Performance}
+Regarding performance, Microsoft has published some performance targets for Blob storage. \cite{blob_targets} While they are high-end, these targets can be achieved keeping in mind that the observed performance always depends on various factors like workload type, object size and more.  Some key performance targets are shown in table \ref{Blob targets}
+
+\begin{table}[h]
+	\resizebox{\textwidth}{!}{%
+		\begin{tabular}{|l|l|}
+			\hline
+			\multicolumn{1}{|c|}{\textbf{Resource}}                                           & \multicolumn{1}{c|}{\textbf{Target}}                     \\ \hline
+			Maximum container size                                       & Same as maximum storage account capacity (default 5 PiB) \\ \hline
+			\multicolumn{1}{|c|}{Maximum number of blobs and containers} & Unlimited                                                \\ \hline
+			Maximum block blob size                                      & 50,000 X 4000 MiB ($\sim$190 TiB)                        \\ \hline
+			Blob request rate                                            & Up to 500 requests per second                            \\ \hline
+			Maximum blob size via PUT operation                          & 5000 MiB                                                 \\ \hline
+			Maximum ingress in LRS/GRS/ZRS regions                       & 60 Gbps                                                  \\ \hline
+			Maximum egress in LRS/GRS/ZRS regions                        & 120 Gbps                                                 \\ \hline
+			Maximum ingress in other regions                             & 25 Gbps                                                  \\ \hline
+			Maximum egress in other regions                              & 50 Gbps                                                  \\ \hline
+		\end{tabular}%
+	}\caption{\label{Blob targets}Blob Storage Performance Targets}
+\end{table}
+
+Amazon hasn't made any performance targets official, however the maximum size of an object can range fro 0 bytes up to 5 TB. A single PUT operation, meanwhile, can upload an object that is 5GB in size at most. Furthermore, the maximum number of buckets in an account is 100 by default, and this limit can be increased to 1000 by paying a service fee. There is no maximum bucket size limit. \cite{s3faq, s3_limits}
+
+The work done in \cite{s3vsblob_performance} shines more light on the performance of cloud storage solutions including S3, S3 Glacier, Blob Storage, as various generated workloads (differing in file size and number) were used to measure and compare the actual performance of each service during 2013-2014.  
+
+\subsubsection{Latency}
+The authors in \cite{s3vsblob_performance} calculated the \ac{rtt} experienced when using cloud storage services, as shown in  figure \ref{fig:latency}
+\begin{figure} [h]
+	\centering
+    \includegraphics[scale=0.7]{images/latency}
+    \caption{\label{fig:latency}Latency of cloud services}
+\end{figure}
+
+
+It was established from the results that RTTs are stable and nearly identical for S3 and Azure services (in the same regions), and the determining factor was propagation delay (due to distance from data center).
+
+\subsubsection{Throughput}
+Research was also conducted in \cite{s3vsblob_performance} to measure throughput when downloading single files and bundle of files. Results are in figure  \ref{fig:throughput} . 
+\begin{figure} [h]
+	\centering
+	\includegraphics[scale=0.5]{images/throughput}
+	\caption{\label{fig:throughput}Download throughput of cloud services}
+\end{figure}
+
+Across all services, performance improves for large files but this is a natural result of \ac{tcp} algorithms, and Glacier is by far the slowest service (with strict download limits set), which is natural as it is meant for archiving. In general, however, there is no clear winner as Azure performs better for small files, while S3 comes on top for large files, and there also exist performance differences for each service's data centers, which is probably a result of differences in connection quality. In addition,  the results are similar when it comes to downloading bundles of files, though overall throughput is vastly reduced due to the overhead involved in managing the vast number of files .
+
+\subsubsection{Performance Variation}
+Another benchmark in \cite{s3vsblob_performance} was carried out to determine if the performance of each services varies due to, for example peak traffic causing slowdown at certain points in the day.
+\begin{figure} [h]
+	\centering
+	\includegraphics[scale=0.5]{images/variation}
+	\caption{\label{fig:variation}Performance variation of cloud services}
+\end{figure}
+
+As shown in \ref{fig:variation}, upload speeds remain almost perfectly stable across all providers. Download speeds, on the other hand, vary wildly depending on the service, data center and workload. Glacier speeds remain capped as mentioned earlier, while Azure performs the best (likely due to the small workload size).  S3 in Dublin shows the greatest variation, frequently jumping between 20 and 100 Mb/s, due to the great difference in performance capability of the server group that is reached each time (one is limited to 20 Mb/s). 
+
+\subsubsection{Connection Management and Overhead}
+The way each service manages its connection when uploading multiple files also affects the amount of overhead that is generated each time. Amazon offers the most cleverly implemented services in this regard, since S3 uses two connections, one for user login and another for data transfer, while Glacier uses only a single connection for both (regardless of the number of uploaded files). Azure, however, uses a separate connection for each transferred file, and so it suffers from especially increased overhead when many small files are uploaded. (figure \ref{fig:overhead})
+
+\begin{figure} [h]
+	\centering
+	\includegraphics[scale=0.3]{images/overhead}
+	\caption{\label{fig:overhead}Upload overhead of cloud services}
+\end{figure}
+
+\subsection{Pricing}
+Azure Blob and S3 both are based on a "pay-as-you-go" charging model,  and the results for some comparable storage classes are shown below. The prices shown in \ref{object_pricing} are for the US East (N.Virginia) S3 region and East US 2 Blob region. Blob Storage also takes into account the redundancy method used when presenting the prices and, for Blob, the flat structure namespace option was selected. \cite{s3_pricing,blob_pricing}
+
+\begin{table}[!h]
+	\resizebox{\textwidth}{!}{%
+		\begin{tabular}{|llll|}
+			\hline
+			\multicolumn{1}{|l|}{} &
+			\multicolumn{1}{l|}{\textbf{Amazon S3-IA}} &
+			\multicolumn{1}{l|}{\textbf{Blob Cool Tier LRS}} &
+			\textbf{Blob Cool Tier GRS} \\ \hline
+			\multicolumn{4}{|c|}{\cellcolor[HTML]{EFEFEF}\textbf{Data Storage}} \\ \hline
+			\multicolumn{1}{|l|}{Per Month Storage} &
+			\multicolumn{1}{l|}{\$0.0125 per GB} &
+			\multicolumn{1}{l|}{\$0.01 per GB} &
+			\$0.02 per GB \\ \hline
+			\multicolumn{4}{|c|}{\cellcolor[HTML]{EFEFEF}\textbf{Data Transfer}} \\ \hline
+			\multicolumn{1}{|l|}{Data Retrieval} &
+			\multicolumn{1}{l|}{\$0.01 per GB} &
+			\multicolumn{1}{l|}{\$0.01 per GB} &
+			\$0.01 per GB \\ \hline
+			\multicolumn{1}{|l|}{Transfer IN from Internet} &
+			\multicolumn{1}{l|}{Free} &
+			\multicolumn{1}{l|}{Free} &
+			Free \\ \hline
+			\multicolumn{1}{|l|}{Transfer TO another Region/AZ} &
+			\multicolumn{1}{l|}{$0.01 - $0.02 per GB} &
+			\multicolumn{1}{l|}{\$0.01 per GB} &
+			\$0.01 per GB \\ \hline
+			\multicolumn{4}{|c|}{\cellcolor[HTML]{EFEFEF}\textbf{Requests}} \\ \hline
+			\multicolumn{1}{|l|}{Write Requests} & \multicolumn{1}{l|}{\$0.01 per 1,000 requests}  & \multicolumn{1}{l|}{\$0.1 per 10,000 requests}   & \$0.2 per 10,000 requests   \\ \hline
+			\multicolumn{1}{|l|}{Read Requests}  & \multicolumn{1}{l|}{\$0.001 per 1,000 requests} & \multicolumn{1}{l|}{\$0.01 per 10,000 requests}  & \$0,01 per 10,000 requests  \\ \hline
+			\multicolumn{1}{|l|}{Delete} &
+			\multicolumn{1}{l|}{Free} &
+			\multicolumn{1}{l|}{Free} &
+			Free \\ \hline
+			\multicolumn{1}{|l|}{Other Requests} & \multicolumn{1}{l|}{\$0.001 per 1,000 requests} & \multicolumn{1}{l|}{\$0.004 per 10,000 requests} & \$0.004 per 10,000 requests \\ \hline
+		\end{tabular}%
+	}\caption{\label{object_pricing}Object Storage Pricing Sample}
+\end{table}
+
+It can be observed from \ref{object_pricing} that, in general, S3 and Blob prices are similar, with Blob Cool Tier LRS overall being a bit cheaper than S3-IA, and GRS being the most expensive fo the three. However, this is only a sample, and the cost-efficiency of each service can only be determined after extensive analysis and careful consideration of various factors like the storage classes and redundancy options selected, workloads to be carried out and more. 
+
+One interesting discovery was made in \cite{s3vsblob_performance}, which was that, while S3's expected charged are more or less identical to actual charges, Blob's actual charges in bandwidth and storage are 25\% cheaper than expected.
+
 
 \section{Conclusions}

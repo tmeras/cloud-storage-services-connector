@@ -23,7 +23,6 @@ def no_redirect_OAuth2():
         oauth_result = auth_flow.finish(auth_code)
     except Exception as e:
         sys.exit('Error: ' + e)
-        exit(1)
 
     with dropbox.Dropbox(oauth2_access_token=oauth_result.access_token) as dbx:
         dbx.users_get_current_account()
@@ -65,8 +64,8 @@ if __name__ == "__main__":
          sys.exit("ERROR: Something went wrong while accessing Dropbox object")
 
     backup(dbx)
-    select_revision(dbx)
-    dbx.close()
+
+    dbx.close() #clean up all resources
 
     
     

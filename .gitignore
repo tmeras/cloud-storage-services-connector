@@ -142,3 +142,4 @@ report/thesis.synctex.gz
 *.toc
 report/thesis.pdf
 
+src/test.py

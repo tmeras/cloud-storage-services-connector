@@ -9,7 +9,7 @@ import dropbox
 
 
 def no_redirect_OAuth2():
-    #Goes through a basic oauth flow using the existing long-lived token type
+    # Goes through a basic oauth flow using the existing long-lived token type
 
     APP_KEY = "t1uokr1i2qj9ot1"
     APP_SECRET = "yxrwv0tc5fipf8e"
@@ -28,22 +28,25 @@ def no_redirect_OAuth2():
     with dropbox.Dropbox(oauth2_access_token=oauth_result.access_token) as dbx:
         dbx.users_get_current_account()
         print("Successfully set up client!")
-        return dbx #Return the Dropbox object to later use it for requests to Dropbox API
+        return dbx  # Return the Dropbox object to later use it for requests to Dropbox API
+
 
 def download(dbx):
-    """Download file or folder, as requested by user, from Dropbox, 
+    """
+    Download file or folder, as requested by user, from Dropbox,
     """
     print("What do you want to download?")
     print("\t1.File")
     print("\t2.Folder as ZIP file")
     print("NOTE: Existing files and folders will be overwritten")
     choice = input("Enter choice: ")
-    
+
     if choice == "1":
         path = input("Enter Dropbox file to download: ")
         if not path.startswith("/"):
             path = "/" + path
-        localdir = os.path.expanduser(input("Enter local machine directory where file should be downloaded to: "))
+        localdir = os.path.expanduser(
+            input("Enter local machine directory where file should be downloaded to: "))
         if not os.path.exists(localdir):
             print(localdir, 'does not exist in your filesystem')
             return None
@@ -56,7 +59,7 @@ def download(dbx):
 
         with stopwatch('download'):
             try:
-                md = dbx.files_download_to_file(localdir,path)
+                md = dbx.files_download_to_file(localdir, path)
             except dropbox.exceptions.ApiError as err:
                 print('*** API error', err)
                 return None
@@ -66,7 +69,8 @@ def download(dbx):
         path = input("Enter Dropbox folder to download: ")
         if not path.startswith("/"):
             path = "/" + path
-        localdir = os.path.expanduser(input("Enter local machine directory where folder should be downloaded to: "))
+        localdir = os.path.expanduser(
+            input("Enter local machine directory where folder should be downloaded to: "))
         if not os.path.exists(localdir):
             print(localdir, 'does not exist in your filesystem')
             return None
@@ -81,14 +85,15 @@ def download(dbx):
 
         with stopwatch('download'):
             try:
-                md = dbx.files_download_zip_to_file(localdir,path)
+                md = dbx.files_download_zip_to_file(localdir, path)
             except dropbox.exceptions.ApiError as err:
                 print('*** API error', err)
                 return None
         print("Folder download successful")
     else:
         print("Error: Please select one of the above choices")
-    
+
+
 def delete(dbx):
     path = input("Enter Dropbox file or folder to delete: ")
     if not path.startswith("/"):
@@ -102,41 +107,44 @@ def delete(dbx):
             return None
     print("Successfully deleted", md.name)
 
+
 def upload(dbx):
-    """ Upload file or folder, as requested by user, to Dropbox
+    """
+    Upload file or folder, as requested by user, to Dropbox
         If a file is already uploaded and hasn't changed since last upload, do not reupload it
     """
     folder = input("Enter Dropbox folder name to upload to: ")
-    rootdir = os.path.expanduser(input("Enter local directory or file to upload: "))
+    rootdir = os.path.expanduser(
+        input("Enter local directory or file to upload: "))
     rootdir = rootdir.rstrip(os.path.sep)
     print('Dropbox folder name:', folder)
     print('Local directory:', rootdir)
     if not os.path.exists(rootdir):
         print(rootdir, 'does not exist in your filesystem')
         return None
-    #Upload file
+    # Upload file
     elif os.path.isfile(rootdir):
-        print(rootdir, 'is a file in your filesystem')   
+        print(rootdir, 'is a file in your filesystem')
         rootdir.replace(os.path.sep, "/")
         file_name = rootdir.split("/")[-1]
         if not isinstance(file_name, six.text_type):
             file_name = file_name.decode('utf-8')
         nname = unicodedata.normalize('NFC', name)
-        
-        listing = list_folder(dbx,folder,file_name)
+
+        listing = list_folder(dbx, folder, file_name)
         if nname in listing:
             md = listing[nname]
             mtime = os.path.getmtime(rootdir)
             mtime_dt = datetime.datetime(*time.gmtime(mtime)[:6])
             size = os.path.getsize(rootdir)
-            #Compare file modification times
+            # Compare file modification times
             if (isinstance(md, dropbox.files.FileMetadata) and
                     mtime_dt == md.client_modified and size == md.size):
                 print(file_name, 'is already synced [times match]')
             else:
                 print(name, 'exists with different stats, downloading')
                 res = download_file(dbx, folder, subfolder, name)
-                #Compare file contents
+                # Compare file contents
                 with open(rootdir) as f:
                     data = f.read()
                 if res == data:
@@ -145,14 +153,14 @@ def upload(dbx):
                     print(file_name, 'has changed since last sync')
                     if yesno('Refresh %s' % file_name, False):
                         upload_file(dbx, rootdir, folder, "", file_name,
-                            overwrite=True)
+                                    overwrite=True)
         elif yesno('Upload %s' % file_name, True):
             upload_file(dbx, rootdir, folder, "", file_name)
 
-    #Upload folder content
+    # Upload folder content
     elif os.path.isdir(rootdir):
         print(rootdir, 'is a folder in your filesystem')
-        for dn, dirs, files in os.walk(rootdir): 
+        for dn, dirs, files in os.walk(rootdir):
             subfolder = dn[len(rootdir):].strip(os.path.sep)
             listing = list_folder(dbx, folder, subfolder)
             print('Descending into', subfolder, '...')
@@ -174,14 +182,14 @@ def upload(dbx):
                     mtime = os.path.getmtime(fullname)
                     mtime_dt = datetime.datetime(*time.gmtime(mtime)[:6])
                     size = os.path.getsize(fullname)
-                    #Compare file modification times
+                    # Compare file modification times
                     if (isinstance(md, dropbox.files.FileMetadata) and
                             mtime_dt == md.client_modified and size == md.size):
                         print(name, 'is already synced [times match]')
                     else:
                         print(name, 'exists with different stats, downloading')
                         res = download_file(dbx, folder, subfolder, name)
-                        #Compare file contents
+                        # Compare file contents
                         with open(fullname) as f:
                             data = f.read()
                         if res == data:
@@ -190,7 +198,7 @@ def upload(dbx):
                             print(name, 'has changed since last sync')
                             if yesno('Refresh %s' % name, False):
                                 upload_file(dbx, fullname, folder, subfolder, name,
-                                    overwrite=True)
+                                            overwrite=True)
                 elif yesno('Upload %s' % name, True):
                     upload_file(dbx, fullname, folder, subfolder, name)
 
@@ -211,6 +219,7 @@ def upload(dbx):
             dirs[:] = keep
 
     dbx.close()
+
 
 def list_folder(dbx, folder, subfolder):
     """List a folder.
@@ -233,6 +242,7 @@ def list_folder(dbx, folder, subfolder):
             rv[entry.name] = entry
         return rv
 
+
 def download_file(dbx, folder, subfolder, name):
     """Download a file.
     Return the bytes of the file, or None if it doesn't exist.
@@ -249,6 +259,7 @@ def download_file(dbx, folder, subfolder, name):
     data = res.content
     print(len(data), 'bytes; md:', md)
     return data
+
 
 def upload_file(dbx, fullname, folder, subfolder, name, overwrite=False):
     """Upload a file.
@@ -274,6 +285,7 @@ def upload_file(dbx, fullname, folder, subfolder, name, overwrite=False):
             return None
     print('uploaded as', res.name)
     return res
+
 
 def yesno(message, default):
     """Handy helper function to ask a yes/no question.
@@ -301,6 +313,7 @@ def yesno(message, default):
             pdb.set_trace()
         print('Please answer YES or NO.')
 
+
 @contextlib.contextmanager
 def stopwatch(message):
     """Context manager to print how long a block of code took."""
@@ -311,10 +324,12 @@ def stopwatch(message):
         t1 = time.time()
         print('Total elapsed time for %s: %.3f seconds' % (message, t1 - t0))
 
+
 if __name__ == "__main__":
-    dbx = dropbox.Dropbox("sl.BWCNmrYTldRgOvYT-lVV1tbAVvDDXVsmsz_GJGN_4B5ge6QGKQ3eNZutjR0pHN3paO-5dDOF5nPUKVPIWonZase1MTjXzusQypPMLrZ5tv3j2x24X-cdwMWsFfcijYFzYwdBSGw")
-    #Used developer access token instead of OAuth2 while testing 
-    #dbx = no_redirect_OAuth2()
+    dbx = dropbox.Dropbox(
+        "sl.BWCNmrYTldRgOvYT-lVV1tbAVvDDXVsmsz_GJGN_4B5ge6QGKQ3eNZutjR0pHN3paO-5dDOF5nPUKVPIWonZase1MTjXzusQypPMLrZ5tv3j2x24X-cdwMWsFfcijYFzYwdBSGw")
+    # Used developer access token instead of OAuth2 while testing
+    # dbx = no_redirect_OAuth2()
 
     stop = False
     while not stop:
@@ -330,12 +345,9 @@ if __name__ == "__main__":
             download(dbx)
         elif (choice == "3"):
             delete(dbx)
-        elif(choice == "4"):
+        elif (choice == "4"):
             stop = True
         else:
             print("Please select one of the above choices")
 
         dbx.close()
-
-    
-    

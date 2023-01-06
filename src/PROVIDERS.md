@@ -7,6 +7,7 @@ This file lists all the cloud storage providers that will be compared and implem
 
 3. The steps (commands) to install the library
 
+
 ## Dropbox
 The link to the Python SDK is:
 https://www.dropbox.com/developers/documentation/python#overview
@@ -18,6 +19,7 @@ To install the SDK, type the following command:
 ```
 pip install dropbox
 ```
+
 
 ## Box
 The link to the Python SDK is:
@@ -31,6 +33,7 @@ To install the SDK, type the following command:
 pip install boxsdk
 ```
 
+
 ## Google Drive
 The link to the Python SDK is:
 https://developers.google.com/drive/labels/quickstart/python
@@ -42,6 +45,7 @@ To install the SDK, type the following command:
 ```
 pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 ```
+
 
 ## Amazon S3
 The link to the Python SDK is:

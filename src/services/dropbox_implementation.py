@@ -9,8 +9,8 @@ import dropbox
 
 
 def no_redirect_OAuth2():
-    # Goes through a basic oauth flow using the existing long-lived token type
-
+    """Goes through a basic oauth flow using the existing long-lived token type
+    """
     APP_KEY = "t1uokr1i2qj9ot1"
     APP_SECRET = "yxrwv0tc5fipf8e"
 
@@ -31,106 +31,95 @@ def no_redirect_OAuth2():
         return dbx  # Return the Dropbox object to later use it for requests to Dropbox API
 
 
-def download(dbx):
-    """
-    Download file or folder, as requested by user, from Dropbox,
-    """
-    print("What do you want to download?")
-    print("\t1.File")
-    print("\t2.Folder as ZIP file")
-    print("NOTE: Existing files and folders will be overwritten")
-    choice = input("Enter choice: ")
+def close_dbx():
+    if isinstance(dbx, dropbox.Dropbox):
+        dbx.close()
+    else:
+        print("Error when cleaning up resources")
 
-    if choice == "1":
-        path = input("Enter Dropbox file to download: ")
-        if not path.startswith("/"):
-            path = "/" + path
-        localdir = os.path.expanduser(
-            input("Enter local machine directory where file should be downloaded to: "))
-        if not os.path.exists(localdir):
-            print(localdir, 'does not exist in your filesystem')
+
+def download(is_file, name, local_path, dbx_path):
+    """
+    Download file or folder, as requested by user, from Dropbox
+    """
+    local_path = os.path.expanduser(local_path)
+    print('Dropbox folder name:', dbx_path)
+    print('Local directory:', local_path)
+    print('File/folder name: ', name)
+
+    if is_file:
+        if not dbx_path.startswith("/"):
+            dbx_path = "/" + dbx_path
+        if not os.path.exists(local_path):
+            print(local_path, 'does not exist in your filesystem')
             return None
-        localdir = localdir.replace(os.path.sep, "/")
-        if not localdir.endswith("/"):
-            localdir = localdir + "/"
-        name = input("Save file as (include file extension): ")
-        name.strip("/")
-        localdir += name
-
+        local_path = local_path.replace(os.path.sep, "/")
+        if not local_path.endswith("/"):
+            local_path = local_path + "/"
+        name = name.strip("/")
+        local_path += name
         with stopwatch('download'):
             try:
-                md = dbx.files_download_to_file(localdir, path)
+                md = dbx.files_download_to_file(local_path, dbx_path)
             except dropbox.exceptions.ApiError as err:
                 print('*** API error', err)
                 return None
         print(md.name, "downloaded succesfully")
-
-    elif choice == "2":
-        path = input("Enter Dropbox folder to download: ")
-        if not path.startswith("/"):
-            path = "/" + path
-        localdir = os.path.expanduser(
-            input("Enter local machine directory where folder should be downloaded to: "))
-        if not os.path.exists(localdir):
-            print(localdir, 'does not exist in your filesystem')
+    else:
+        if not dbx_path.startswith("/"):
+            dbx_path = "/" + dbx_path
+        if not os.path.exists(local_path):
+            print(local_path, 'does not exist in your filesystem')
             return None
-        localdir = localdir.replace(os.path.sep, "/")
-        if not localdir.endswith("/"):
-            localdir = localdir + "/"
-        name = input("Save folder as: ")
-        name.strip(("/"))
-        if (not name.endswith(".zip")):
+        local_path = local_path.replace(os.path.sep, "/")
+        if not local_path.endswith("/"):
+            local_path = local_path + "/"
+        name = name.strip("/")
+        if not name.endswith(".zip"):
             name += ".zip"
-        localdir += name
-
+        local_path += name
         with stopwatch('download'):
             try:
-                md = dbx.files_download_zip_to_file(localdir, path)
+                dbx.files_download_zip_to_file(local_path, dbx_path)
             except dropbox.exceptions.ApiError as err:
                 print('*** API error', err)
                 return None
-        print("Folder download successful")
-    else:
-        print("Error: Please select one of the above choices")
+        print("Folder named", dbx_path.split("/")[-1], "downloaded successful")
 
 
-def delete(dbx):
-    path = input("Enter Dropbox file or folder to delete: ")
-    if not path.startswith("/"):
-        path = "/" + path
-
+def delete(dbx_path):
+    if not dbx_path.startswith("/"):
+        dbx_path = "/" + dbx_path
     with stopwatch('delete'):
         try:
-            md = dbx.files_delete(path)
+            md = dbx.files_delete(dbx_path)
         except dropbox.exceptions.ApiError as err:
             print('*** API error', err)
             return None
     print("Successfully deleted", md.name)
 
 
-def upload(dbx):
+def upload(rootdir, folder):
     """
-    Upload file or folder, as requested by user, to Dropbox
-        If a file is already uploaded and hasn't changed since last upload, do not reupload it
+     Upload file or folder, as requested by user, to Dropbox
+    If a file is already uploaded and hasn't changed since last upload, do not reupload it
     """
-    folder = input("Enter Dropbox folder name to upload to: ")
-    rootdir = os.path.expanduser(
-        input("Enter local directory or file to upload: "))
+    rootdir = os.path.expanduser(rootdir)
     rootdir = rootdir.rstrip(os.path.sep)
     print('Dropbox folder name:', folder)
     print('Local directory:', rootdir)
     if not os.path.exists(rootdir):
         print(rootdir, 'does not exist in your filesystem')
         return None
+
     # Upload file
     elif os.path.isfile(rootdir):
         print(rootdir, 'is a file in your filesystem')
-        rootdir.replace(os.path.sep, "/")
+        rootdir = rootdir.replace(os.path.sep, "/")
         file_name = rootdir.split("/")[-1]
         if not isinstance(file_name, six.text_type):
             file_name = file_name.decode('utf-8')
-        nname = unicodedata.normalize('NFC', name)
-
+        nname = unicodedata.normalize('NFC', file_name)
         listing = list_folder(dbx, folder, file_name)
         if nname in listing:
             md = listing[nname]
@@ -325,29 +314,10 @@ def stopwatch(message):
         print('Total elapsed time for %s: %.3f seconds' % (message, t1 - t0))
 
 
+ACCESS_TOKEN = "sl.BWiweo3ioG_406obuOWVGvEoI3OxniQVITO0sUi7t3LwN9Jnv1QKEEBQ6drjkRzhwGArFi_UWD7EZEUC5jBQS0LDkoRpbuTJMpnAFvzZe1BvzQsXxMN5_yNjQejKXm-6hR23QeM"
+
 if __name__ == "__main__":
-    dbx = dropbox.Dropbox(
-        "sl.BWCNmrYTldRgOvYT-lVV1tbAVvDDXVsmsz_GJGN_4B5ge6QGKQ3eNZutjR0pHN3paO-5dDOF5nPUKVPIWonZase1MTjXzusQypPMLrZ5tv3j2x24X-cdwMWsFfcijYFzYwdBSGw")
-    # Used developer access token instead of OAuth2 while testing
-    # dbx = no_redirect_OAuth2()
-
-    stop = False
-    while not stop:
-        print("\nWhat do you want to do?")
-        print("\t1.Upload")
-        print("\t2.Download")
-        print("\t3.Delete")
-        print("\t4.Exit")
-        choice = input("Enter choice: ")
-        if (choice == "1"):
-            upload(dbx)
-        elif (choice == "2"):
-            download(dbx)
-        elif (choice == "3"):
-            delete(dbx)
-        elif (choice == "4"):
-            stop = True
-        else:
-            print("Please select one of the above choices")
-
-        dbx.close()
+    dbx = dropbox.Dropbox(ACCESS_TOKEN)
+    dbx.close()
+else:
+    dbx = dropbox.Dropbox(ACCESS_TOKEN)

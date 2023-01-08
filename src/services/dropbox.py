@@ -9,8 +9,8 @@ import dropbox
 
 
 def no_redirect_OAuth2():
-    # Goes through a basic oauth flow using the existing long-lived token type
-
+    """Goes through a basic oauth flow using the existing long-lived token type
+    """
     APP_KEY = "t1uokr1i2qj9ot1"
     APP_SECRET = "yxrwv0tc5fipf8e"
 
@@ -54,7 +54,7 @@ def download(dbx):
         if not localdir.endswith("/"):
             localdir = localdir + "/"
         name = input("Save file as (include file extension): ")
-        name.strip("/")
+        name = name.strip("/")
         localdir += name
 
         with stopwatch('download'):
@@ -78,8 +78,8 @@ def download(dbx):
         if not localdir.endswith("/"):
             localdir = localdir + "/"
         name = input("Save folder as: ")
-        name.strip(("/"))
-        if (not name.endswith(".zip")):
+        name = name.strip("/")
+        if not name.endswith(".zip"):
             name += ".zip"
         localdir += name
 
@@ -350,4 +350,4 @@ if __name__ == "__main__":
         else:
             print("Please select one of the above choices")
 
-        dbx.close()
+    dbx.close()

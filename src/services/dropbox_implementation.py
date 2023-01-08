@@ -15,7 +15,7 @@ def no_redirect_OAuth2():
     APP_KEY = "t1uokr1i2qj9ot1"
     APP_SECRET = "yxrwv0tc5fipf8e"
 
-    auth_flow = DropboxOAuth2FlowNoRedirect(APP_KEY, APP_SECRET)
+    auth_flow = dropbox.DropboxOAuth2FlowNoRedirect(APP_KEY, APP_SECRET)
     authorize_url = auth_flow.start()
     print("1. Go to: " + authorize_url)
     print("2. Click \"Allow\" (you might have to log in first).")
@@ -65,7 +65,7 @@ def download(is_file, name, local_path, dbx_path):
             except dropbox.exceptions.ApiError as err:
                 print('*** API error', err)
                 return None
-        print(md.name, "downloaded successfully")
+        print(md.name, "downloaded succesfully")
     else:
         if not dbx_path.startswith("/"):
             dbx_path = "/" + dbx_path
@@ -103,7 +103,7 @@ def delete(dbx_path):
 def upload(rootdir, folder):
     """
     Upload file or folder, as requested by user, to Dropbox
-    If a file is already uploaded and hasn't changed since last upload, do not reupload it
+    If a file is already uploaded and hasn't changed since last upload, do not re-upload it
     """
     rootdir = os.path.expanduser(rootdir)
     rootdir = rootdir.rstrip(os.path.sep)

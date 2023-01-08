@@ -1,7 +1,6 @@
 import argparse
 import services.dropbox_implementation as dropbox_implementation
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.description = "A library that provides access to cloud storage services" \

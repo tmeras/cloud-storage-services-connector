@@ -17,10 +17,11 @@ The report is using `LaTeX`.
 If you don't have `LaTeX` installed in your system do so by using
 
 ```bash
-sudo apt-get install texlive-latex-base
-sudo apt-get install texlive-fonts-recommended
-sudo apt-get install texlive-fonts-extra
-sudo apt-get install texlive-latex-extra
+sudo apt install texlive-latex-base
+sudo apt install texlive-fonts-recommended
+sudo apt install texlive-fonts-extra
+sudo apt install texlive-latex-extra
+sudo apt install texlive-extra-utils
 ```
 
 To generate the report use

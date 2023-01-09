@@ -9,7 +9,8 @@ import dropbox
 
 
 def no_redirect_OAuth2():
-    """Goes through a basic oauth flow using the existing long-lived token type
+    """
+    Goes through a basic oauth flow using the existing long-lived token type
     """
     APP_KEY = "t1uokr1i2qj9ot1"
     APP_SECRET = "yxrwv0tc5fipf8e"
@@ -64,7 +65,7 @@ def download(is_file, name, local_path, dbx_path):
             except dropbox.exceptions.ApiError as err:
                 print('*** API error', err)
                 return None
-        print(md.name, "downloaded succesfully")
+        print(md.name, "downloaded successfully")
     else:
         if not dbx_path.startswith("/"):
             dbx_path = "/" + dbx_path
@@ -101,7 +102,7 @@ def delete(dbx_path):
 
 def upload(rootdir, folder):
     """
-     Upload file or folder, as requested by user, to Dropbox
+    Upload file or folder, as requested by user, to Dropbox
     If a file is already uploaded and hasn't changed since last upload, do not reupload it
     """
     rootdir = os.path.expanduser(rootdir)
@@ -211,7 +212,8 @@ def upload(rootdir, folder):
 
 
 def list_folder(dbx, folder, subfolder):
-    """List a folder.
+    """
+    List a folder.
     Return a dict mapping unicode filenames to
     FileMetadata|FolderMetadata entries.
     """
@@ -233,7 +235,8 @@ def list_folder(dbx, folder, subfolder):
 
 
 def download_file(dbx, folder, subfolder, name):
-    """Download a file.
+    """
+    Download a file.
     Return the bytes of the file, or None if it doesn't exist.
     """
     path = '/%s/%s/%s' % (folder, subfolder.replace(os.path.sep, '/'), name)
@@ -251,7 +254,8 @@ def download_file(dbx, folder, subfolder, name):
 
 
 def upload_file(dbx, fullname, folder, subfolder, name, overwrite=False):
-    """Upload a file.
+    """
+    Upload a file.
     Return the request response, or None in case of error.
     """
     path = '/%s/%s/%s' % (folder, subfolder.replace(os.path.sep, '/'), name)
@@ -277,7 +281,8 @@ def upload_file(dbx, fullname, folder, subfolder, name, overwrite=False):
 
 
 def yesno(message, default):
-    """Handy helper function to ask a yes/no question.
+    """
+    Handy helper function to ask a yes/no question.
     Special answers:
     - q or quit exits the program
     - p or pdb invokes the debugger
@@ -315,6 +320,7 @@ def stopwatch(message):
 
 
 ACCESS_TOKEN = "sl.BWiweo3ioG_406obuOWVGvEoI3OxniQVITO0sUi7t3LwN9Jnv1QKEEBQ6drjkRzhwGArFi_UWD7EZEUC5jBQS0LDkoRpbuTJMpnAFvzZe1BvzQsXxMN5_yNjQejKXm-6hR23QeM"
+
 
 if __name__ == "__main__":
     dbx = dropbox.Dropbox(ACCESS_TOKEN)

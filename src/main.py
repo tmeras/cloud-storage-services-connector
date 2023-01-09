@@ -1,11 +1,12 @@
 import argparse
 import services.dropbox_implementation as dropbox_implementation
 
+
 if __name__ == "__main__":
-    print()
-    parser = argparse.ArgumentParser(
-        description="Provides a common interface for various cloud services"
-    )
+    parser = argparse.ArgumentParser()
+    parser.description = "A library that provides access to cloud storage services" \
+        "through a common interface for various cloud services"
+
     subparsers = parser.add_subparsers(title="available providers",
                                        required=True, dest="service")
 

@@ -1,7 +1,6 @@
 import argparse
 import services.dropbox_implementation as dropbox_implementation
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.description = "A library that provides access to cloud storage services" \
@@ -59,13 +58,14 @@ if __name__ == "__main__":
     print(args)
 
     if args.service == 'dropbox':
+        dp = dropbox_implementation.Dropbox()
         if args.dbx_action == 'upload':
-            dropbox_implementation.upload(args.local_path, args.dbx_path)
+            dp.upload(args.local_path.strip(), args.dbx_path.strip())
         elif args.dbx_action == 'download':
-            dropbox_implementation.download(
-                args.is_file, args.name, args.local_path, args.dbx_path)
+            dp.download(
+                args.is_file, args.name.strip(), args.local_path.strip(), args.dbx_path.strip())
         elif args.dbx_action == 'delete':
-            dropbox_implementation.delete(args.dbx_path)
-        dropbox_implementation.close_dbx()
+            dp.delete(args.dbx_path.strip())
+        dp.close_dbx()
     else:
         print("Support for this service is not implemented yet")

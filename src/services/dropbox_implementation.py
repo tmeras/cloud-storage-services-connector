@@ -1,31 +1,33 @@
+import contextlib
 import datetime
 import os
-import six
 import sys
 import time
 import unicodedata
-import contextlib
+
 import dropbox
+import six
 
 ACCESS_TOKEN = "sl.BWzggXrE8M9ZOUinaivIbTTt3e3mFA8bwV8NDGbXdWlgQANX8jvxhNUMr6HuoxnPL5Siw7Q32GdEdYVgf5lFFJkIDWcNJwv1m7K0y_n1NAqmeB4scNS8uGhKA-thKIc44zC11gE"
 
 
 class Dropbox:
     def __init__(self):
-        self.dbx = dropbox.Dropbox(ACCESS_TOKEN)
+        self.client = dropbox.Dropbox(ACCESS_TOKEN)
 
-    def close_dbx(self):
-        if isinstance(self.dbx, dropbox.Dropbox):
-            self.dbx.close()
+    def close_client(self):
+        if isinstance(self.client, dropbox.Dropbox):
+            self.client.close()
         else:
             print("Error when cleaning up resources")
 
     def download(self, is_file, name, local_path, dbx_path):
-        """ Download file or folder, as requested by user, from Dropbox
+        """
+        Download file or folder, as requested by user, from Dropbox
         """
         local_path = os.path.expanduser(local_path)
-        print('Dropbox folder name:', dbx_path)
-        print('Local directory:', local_path)
+        print('Dropbox folder name: ', dbx_path)
+        print('Local directory: ', local_path)
         print('File/folder name: ', name)
 
         if is_file:
@@ -41,11 +43,11 @@ class Dropbox:
             local_path += name
             with stopwatch('download'):
                 try:
-                    md = self.dbx.files_download_to_file(local_path, dbx_path)
+                    md = self.client.files_download_to_file(local_path, dbx_path)
                 except dropbox.exceptions.ApiError as err:
                     print('*** API error', err)
                     return None
-            print(md.name, "downloaded succesfully")
+            print(md.name, "downloaded successfully")
         else:
             if not dbx_path.startswith("/"):
                 dbx_path = "/" + dbx_path
@@ -61,7 +63,7 @@ class Dropbox:
             local_path += name
             with stopwatch('download'):
                 try:
-                    self.dbx.files_download_zip_to_file(local_path, dbx_path)
+                    self.client.files_download_zip_to_file(local_path, dbx_path)
                 except dropbox.exceptions.ApiError as err:
                     print('*** API error', err)
                     return None
@@ -73,7 +75,7 @@ class Dropbox:
             dbx_path = "/" + dbx_path
         with stopwatch('delete'):
             try:
-                md = self.dbx.files_delete(dbx_path)
+                md = self.client.files_delete(dbx_path)
             except dropbox.exceptions.ApiError as err:
                 print('*** API error', err)
                 return None
@@ -140,7 +142,6 @@ class Dropbox:
                         print('OK, skipping directory:', name)
                 dirs[:] = keep
 
-
     def list_folder(self, folder, subfolder):
         """List a folder.
         Return a dict mapping unicode filenames to
@@ -152,7 +153,7 @@ class Dropbox:
         path = path.rstrip('/')
         try:
             with stopwatch('list_folder'):
-                res = self.dbx.files_list_folder(path)
+                res = self.client.files_list_folder(path)
         except dropbox.exceptions.ApiError as err:
             print('Folder listing failed for', path, '-- assumed empty:', err)
             return {}
@@ -172,14 +173,13 @@ class Dropbox:
             path = path.replace('//', '/')
         with stopwatch('download'):
             try:
-                md, res = self.dbx.files_download(path)
+                md, res = self.client.files_download(path)
             except dropbox.exceptions.ApiError as err:
                 print('*** API error', err)
                 return None
         data = res.content
         print(len(data), 'bytes; md:', md)
         return data
-
 
     def upload_file(self, fullname, folder, subfolder, name):
         """Upload a file.
@@ -195,7 +195,7 @@ class Dropbox:
             data = f.read()
         with stopwatch('upload %d bytes' % len(data)):
             try:
-                res = self.dbx.files_upload(
+                res = self.client.files_upload(
                     data, path, mode,
                     client_modified=datetime.datetime(*time.gmtime(mtime)[:6]),
                     mute=True)

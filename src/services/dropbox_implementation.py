@@ -1,6 +1,6 @@
+import contextlib
 import datetime
 import os
-import six
 import sys
 import time
 import unicodedata
@@ -40,6 +40,7 @@ class Dropbox:
         # If dbx_path points to file
         if re.search(r'\.[a-zA-Z0-9]+$', dbx_path) is not None:
             print(dbx_path, 'points to file')
+
             name = name.strip("/")
             local_path += name
             with stopwatch('download'):
@@ -203,7 +204,8 @@ class Dropbox:
 
 
 def yesno(message, default):
-    """Handy helper function to ask a yes/no question.
+    """
+    Handy helper function to ask a yes/no question.
     Special answers:
     - q or quit exits the program
     - p or pdb invokes the debugger

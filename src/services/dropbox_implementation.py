@@ -5,9 +5,10 @@ import sys
 import time
 import unicodedata
 import contextlib
+import re
 import dropbox
 
-ACCESS_TOKEN = "sl.BWzggXrE8M9ZOUinaivIbTTt3e3mFA8bwV8NDGbXdWlgQANX8jvxhNUMr6HuoxnPL5Siw7Q32GdEdYVgf5lFFJkIDWcNJwv1m7K0y_n1NAqmeB4scNS8uGhKA-thKIc44zC11gE"
+ACCESS_TOKEN = "sl.BYC9VluRNp4UpLl7HDlO86kLtEHg2AinAeZ8BvZCJqJ5mdhIxp0Y1MxVLvuZie-byzYiWUdxGkwAPTP2J1-mcE3v7lkKkyFarj24k1WQqhr38R8ukzDcbUf9ft3SdiMWbQGS6oE"
 
 
 class Dropbox:
@@ -20,23 +21,25 @@ class Dropbox:
         else:
             print("Error when cleaning up resources")
 
-    def download(self, is_file, name, local_path, dbx_path):
+    def download(self, name, local_path, dbx_path):
         """ Download file or folder, as requested by user, from Dropbox
         """
         local_path = os.path.expanduser(local_path)
-        print('Dropbox folder name:', dbx_path)
-        print('Local directory:', local_path)
+        if not dbx_path.startswith("/"):
+            dbx_path = "/" + dbx_path
+        if not os.path.exists(local_path):
+            print(local_path, 'does not exist in your filesystem')
+            return None
+        print('Dropbox folder: ', dbx_path)
+        print('Local directory: ', local_path)
         print('File/folder name: ', name)
+        local_path = local_path.replace(os.path.sep, "/")
+        if not local_path.endswith("/"):
+            local_path = local_path + "/"
 
-        if is_file:
-            if not dbx_path.startswith("/"):
-                dbx_path = "/" + dbx_path
-            if not os.path.exists(local_path):
-                print(local_path, 'does not exist in your filesystem')
-                return None
-            local_path = local_path.replace(os.path.sep, "/")
-            if not local_path.endswith("/"):
-                local_path = local_path + "/"
+        # If dbx_path points to file
+        if re.search(r'\.[a-zA-Z0-9]+$', dbx_path) is not None:
+            print(dbx_path, 'points to file')
             name = name.strip("/")
             local_path += name
             with stopwatch('download'):
@@ -46,15 +49,10 @@ class Dropbox:
                     print('*** API error', err)
                     return None
             print(md.name, "downloaded succesfully")
+
+        # If dbx_path points to folder
         else:
-            if not dbx_path.startswith("/"):
-                dbx_path = "/" + dbx_path
-            if not os.path.exists(local_path):
-                print(local_path, 'does not exist in your filesystem')
-                return None
-            local_path = local_path.replace(os.path.sep, "/")
-            if not local_path.endswith("/"):
-                local_path = local_path + "/"
+            print(dbx_path, 'points to folder')
             name = name.strip("/")
             if not name.endswith(".zip"):
                 name += ".zip"
@@ -84,7 +82,7 @@ class Dropbox:
         """
         rootdir = os.path.expanduser(rootdir)
         rootdir = rootdir.rstrip(os.path.sep)
-        print('Dropbox folder name:', folder)
+        print('Dropbox folder:', folder)
         print('Local directory:', rootdir)
         if not os.path.exists(rootdir):
             print(rootdir, 'does not exist in your filesystem')
@@ -94,7 +92,7 @@ class Dropbox:
         elif os.path.isfile(rootdir):
             print(rootdir, 'is a file in your filesystem')
             rootdir = rootdir.replace(os.path.sep, "/")
-            file_name = rootdir.split("/")[-1]
+            file_name = rootdir.split('/')[-1]
             if not isinstance(file_name, six.text_type):
                 file_name = file_name.decode('utf-8')
             nname = unicodedata.normalize('NFC', file_name)
@@ -106,7 +104,7 @@ class Dropbox:
             print(rootdir, 'is a folder in your filesystem')
             for dn, dirs, files in os.walk(rootdir):
                 subfolder = dn[len(rootdir):].strip(os.path.sep)
-                listing = self.list_folder(folder, subfolder)
+                #listing = self.list_folder(folder, subfolder)
                 print('Descending into', subfolder, '...')
 
                 # First do all the files
@@ -242,7 +240,7 @@ def stopwatch(message):
         print('Total elapsed time for %s: %.3f seconds' % (message, t1 - t0))
 
 
-def no_redirect_OAuth2(self):
+def no_redirect_OAuth2():
     """Goes through a basic oauth flow using the existing long-lived token type
     """
     APP_KEY = "t1uokr1i2qj9ot1"

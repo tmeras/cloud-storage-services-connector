@@ -17,22 +17,20 @@ if __name__ == "__main__":
     # Create subcommand for downloading from Dropbox
     dbx_dlparser = dbx_subparser.add_parser(
         "download", help="download Dropbox content")
-    dbx_dlparser.add_argument(
-        "-f", "--is_file", action="store_true", help="specify if local_path points to file")
     dbx_dlparser.add_argument("-n", "--name", required=True, metavar="",
                               help="name of file (include extension) or zipped folder where content will be downloaded")
     dbx_dlparser.add_argument(
-        "-lp", "--local_path", required=True, metavar="", help="path to local file or folder where content will be downloaded")
+        "-lp", "--local_path", required=True, metavar="", help="path to local directory where content will be downloaded")
     dbx_dlparser.add_argument(
-        "-dp", "--dbx_path", required=True, metavar="", help="path to Dropbox file or folder that will be downloaded")
+        "-dp", "--dbx_path", required=True, metavar="", help="path to Dropbox file or directory that will be downloaded")
 
     # Create subcommand for uploading to Dropbox
     dbx_uplparser = dbx_subparser.add_parser(
         "upload", help="upload content to Dropbox")
     dbx_uplparser.add_argument(
-        "-lp", "--local_path", required=True, metavar="", help="path to local file or folder that will be uploaded")
+        "-lp", "--local_path", required=True, metavar="", help="path to local directory that will be uploaded")
     dbx_uplparser.add_argument(
-        "-dp", "--dbx_path", required=True, metavar="", help="path to Dropbox folder where content will be uploaded")
+        "-dp", "--dbx_path", required=True, metavar="", help="path to Dropbox directory where content will be uploaded")
 
     # Create subcommand for deleting Dropbox content
     dbx_delparser = dbx_subparser.add_parser(
@@ -63,7 +61,7 @@ if __name__ == "__main__":
             dp.upload(args.local_path.strip(), args.dbx_path.strip())
         elif args.dbx_action == 'download':
             dp.download(
-                args.is_file, args.name.strip(), args.local_path.strip(), args.dbx_path.strip())
+                args.name.strip(), args.local_path.strip(), args.dbx_path.strip())
         elif args.dbx_action == 'delete':
             dp.delete(args.dbx_path.strip())
         dp.close_dbx()

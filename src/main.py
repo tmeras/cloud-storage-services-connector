@@ -1,8 +1,10 @@
 import argparse
+import logging
 
 import services.dropbox_implementation as dropbox
 
-if __name__ == "__main__":
+
+def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.description = "A library that provides access to cloud storage services" \
                          "through a common interface for various cloud services"
@@ -16,26 +18,30 @@ if __name__ == "__main__":
 
     # Create subcommand for downloading from Dropbox
     dbx_dlparser = dbx_subparser.add_parser("download", help="download Dropbox content")
-    dbx_dlparser.add_argument("-f", "--is_file", action="store_true", help="specify if local_path points to file")
-    dbx_dlparser.add_argument("-n", "--name", required=True, metavar="",
-                              help="name of file (include extension) or zipped folder where content will be downloaded")
     dbx_dlparser.add_argument(
         "-lp", "--local_path", required=True, metavar="",
-        help="path to local file or folder where content will be downloaded")
+        help="path to local directory where content will be downloaded"
+    )
     dbx_dlparser.add_argument(
-        "-dp", "--dbx_path", required=True, metavar="", help="path to Dropbox file or folder that will be downloaded")
+        "-dp", "--dbx_path", required=True, metavar="",
+        help="path to Dropbox file or directory that will be downloaded"
+    )
 
     # Create subcommand for uploading to Dropbox
     dbx_uplparser = dbx_subparser.add_parser("upload", help="upload content to Dropbox")
-    dbx_uplparser.add_argument("-lp", "--local_path", required=True, metavar="",
-                               help="path to local file or folder that will be uploaded")
-    dbx_uplparser.add_argument("-dp", "--dbx_path", required=True, metavar="",
-                               help="path to Dropbox folder where content will be uploaded")
+    dbx_uplparser.add_argument(
+        "-lp", "--local_path", required=True, metavar="", help="path to local directory that will be uploaded"
+    )
+    dbx_uplparser.add_argument(
+        "-dp", "--dbx_path", required=True, metavar="", help="path to Dropbox directory where content will be uploaded"
+    )
 
     # Create subcommand for deleting Dropbox content
     dbx_delparser = dbx_subparser.add_parser("delete", help="delete Dropbox content")
-    dbx_delparser.add_argument("-dp", "--dbx_path", required=True, metavar="",
-                               help="path to Dropbox file or folder that will be deleted")
+    dbx_delparser.add_argument(
+        "-dp", "--dbx_path", required=True, metavar="",
+        help="path to Dropbox file or folder that will be deleted"
+    )
 
     # Create subcommand for Box
     box_parser = subparsers.add_parser("box", help="use Box services")
@@ -49,18 +55,25 @@ if __name__ == "__main__":
     # Create subcommand for Azure Blob storage
     blob_parser = subparsers.add_parser("blob", help="use Azure Blob storage services")
 
-    args = parser.parse_args()
-    print(args)
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
+
+    args = parse_arguments()
+    logging.debug(args)
 
     if args.service == 'dropbox':
         dp = dropbox.Dropbox()
+
         if args.dbx_action == 'upload':
             dp.upload(args.local_path.strip(), args.dbx_path.strip())
         elif args.dbx_action == 'download':
-            dp.download(
-                args.is_file, args.name.strip(), args.local_path.strip(), args.dbx_path.strip())
+            dp.download(args.local_path.strip(), args.dbx_path.strip())
         elif args.dbx_action == 'delete':
             dp.delete(args.dbx_path.strip())
-        dp.close_client()
+        dp.close_dbx()
+
     else:
         print("Support for this service is not implemented yet")

@@ -1,78 +1,96 @@
-import contextlib
 import datetime
+import logging
 import os
 import sys
 import time
 import unicodedata
-import contextlib
-import re
+
 import dropbox
+import utils
+
+# hack to allow importing modules from parent directory
+sys.path.insert(0, os.path.abspath('..'))
 
 ACCESS_TOKEN = "sl.BYC9VluRNp4UpLl7HDlO86kLtEHg2AinAeZ8BvZCJqJ5mdhIxp0Y1MxVLvuZie-byzYiWUdxGkwAPTP2J1-mcE3v7lkKkyFarj24k1WQqhr38R8ukzDcbUf9ft3SdiMWbQGS6oE"
 
 
 class Dropbox:
     def __init__(self):
-        self.dbx = dropbox.Dropbox(ACCESS_TOKEN)
+        self.client = dropbox.Dropbox(ACCESS_TOKEN)
 
     def close_dbx(self):
-        if isinstance(self.dbx, dropbox.Dropbox):
-            self.dbx.close()
+        """
+        Close dropbox handler, cleaning up resources.
+        """
+        if isinstance(self.client, dropbox.Dropbox):
+            self.client.close()
         else:
-            print("Error when cleaning up resources")
+            logging.warning("Error when cleaning up Dropbox resources.")
 
-    def download(self, name, local_path, dbx_path):
-        """ Download file or folder, as requested by user, from Dropbox
+    def download(self, local_path, dbx_path):
+        """
+        Download file or folder, as requested by user.
         """
         local_path = os.path.expanduser(local_path)
-        if not dbx_path.startswith("/"):
-            dbx_path = "/" + dbx_path
         if not os.path.exists(local_path):
-            print(local_path, 'does not exist in your filesystem')
+            utils.print_string(local_path + " does not exist in your filesystem", utils.PrintStyle.ERROR)
             return None
-        print('Dropbox folder: ', dbx_path)
-        print('Local directory: ', local_path)
-        print('File/folder name: ', name)
+
+        dbx_path = '/' + dbx_path.lstrip('/')
+        try:
+            md = self.client.files_get_metadata(dbx_path)
+        except dropbox.exceptions.ApiError as err:
+            utils.print_string("Could not get metadata for path {}: {}".format(dbx_path, err), utils.PrintStyle.ERROR)
+            return None
+
+        logging.info("Dropbox folder: " + dbx_path)
+        logging.info("Local directory: " + local_path)
         local_path = local_path.replace(os.path.sep, "/")
         if not local_path.endswith("/"):
             local_path = local_path + "/"
 
-        # If dbx_path points to file
-        if re.search(r'\.[a-zA-Z0-9]+$', dbx_path) is not None:
-            print(dbx_path, 'points to file')
+        if isinstance(md, dropbox.files.FileMetadata):
+            logging.info("Dropbox path '{}' is a file".format(dbx_path))
 
-            name = name.strip("/")
+            # TODO: extract filename from given dropbox path
+            name = "output"
             local_path += name
-            with stopwatch('download'):
+            with utils.stopwatch('download'):
                 try:
-                    md = self.dbx.files_download_to_file(local_path, dbx_path)
+                    md = self.client.files_download_to_file(local_path, dbx_path)
                 except dropbox.exceptions.ApiError as err:
-                    print('*** API error', err)
+                    utils.print_string("Could not download file '{}': {}".format(dbx_path, err))
                     return None
-            print(md.name, "downloaded succesfully")
+            utils.print_string(md.name + " downloaded successfully!", utils.PrintStyle.SUCCESS)
 
-        # If dbx_path points to folder
         else:
-            print(dbx_path, 'points to folder')
-            name = name.strip("/")
+            logging.info("Dropbox path '{}' is a directory".format(dbx_path))
+            # TODO: extract filename from given dropbox path
+            name = "output"
             if not name.endswith(".zip"):
                 name += ".zip"
             local_path += name
-            with stopwatch('download'):
+            with utils.stopwatch('download'):
                 try:
-                    self.dbx.files_download_zip_to_file(local_path, dbx_path)
+                    self.client.files_download_zip_to_file(local_path, dbx_path)
                 except dropbox.exceptions.ApiError as err:
-                    print('*** API error', err)
+                    utils.print_string(
+                        "Could not download directory '{}': {}".format(dbx_path, err),
+                        utils.PrintStyle.ERROR
+                    )
                     return None
-            print("Folder named", dbx_path.split(
-                "/")[-1], "downloaded successful")
+
+            utils.print_string(
+                "Directory named " + dbx_path.split("/")[-1] + " downloaded successfully!",
+                utils.PrintStyle.SUCCESS
+            )
 
     def delete(self, dbx_path):
         if not dbx_path.startswith("/"):
             dbx_path = "/" + dbx_path
-        with stopwatch('delete'):
+        with utils.stopwatch('delete'):
             try:
-                md = self.dbx.files_delete(dbx_path)
+                md = self.client.files_delete(dbx_path)
             except dropbox.exceptions.ApiError as err:
                 print('*** API error', err)
                 return None
@@ -105,7 +123,7 @@ class Dropbox:
             print(rootdir, 'is a folder in your filesystem')
             for dn, dirs, files in os.walk(rootdir):
                 subfolder = dn[len(rootdir):].strip(os.path.sep)
-                #listing = self.list_folder(folder, subfolder)
+                # listing = self.list_folder(folder, subfolder)
                 print('Descending into', subfolder, '...')
 
                 # First do all the files
@@ -149,8 +167,8 @@ class Dropbox:
             path = path.replace('//', '/')
         path = path.rstrip('/')
         try:
-            with stopwatch('list_folder'):
-                res = self.dbx.files_list_folder(path)
+            with utils.stopwatch('list_folder'):
+                res = self.client.files_list_folder(path)
         except dropbox.exceptions.ApiError as err:
             print('Folder listing failed for', path, '-- assumed empty:', err)
             return {}
@@ -168,9 +186,9 @@ class Dropbox:
                               subfolder.replace(os.path.sep, '/'), name)
         while '//' in path:
             path = path.replace('//', '/')
-        with stopwatch('download'):
+        with utils.stopwatch('download'):
             try:
-                md, res = self.dbx.files_download(path)
+                md, res = self.client.files_download(path)
             except dropbox.exceptions.ApiError as err:
                 print('*** API error', err)
                 return None
@@ -190,9 +208,9 @@ class Dropbox:
         mtime = os.path.getmtime(fullname)
         with open(fullname, 'rb') as f:
             data = f.read()
-        with stopwatch('upload %d bytes' % len(data)):
+        with utils.stopwatch('upload %d bytes' % len(data)):
             try:
-                res = self.dbx.files_upload(
+                res = self.client.files_upload(
                     data, path, mode,
                     client_modified=datetime.datetime(*time.gmtime(mtime)[:6]),
                     mute=True)
@@ -231,17 +249,6 @@ def yesno(message, default):
         print('Please answer YES or NO.')
 
 
-@contextlib.contextmanager
-def stopwatch(message):
-    """Context manager to print how long a block of code took."""
-    t0 = time.time()
-    try:
-        yield
-    finally:
-        t1 = time.time()
-        print('Total elapsed time for %s: %.3f seconds' % (message, t1 - t0))
-
-
 def no_redirect_OAuth2():
     """Goes through a basic oauth flow using the existing long-lived token type
     """
@@ -259,7 +266,7 @@ def no_redirect_OAuth2():
     except Exception as e:
         sys.exit('Error: ' + e)
 
-    with dropbox.Dropbox(oauth2_access_token=oauth_result.access_token) as dbx:
-        dbx.users_get_current_account()
+    with dropbox.Dropbox(oauth2_access_token=oauth_result.access_token) as client:
+        client.users_get_current_account()
         print("Successfully set up client!")
-        return dbx  # Return the Dropbox object to later use it for requests to Dropbox API
+        return client  # Return the Dropbox object to later use it for requests to Dropbox API

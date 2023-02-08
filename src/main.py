@@ -4,6 +4,7 @@ import utils
 
 import services.dropbox_implementation as dropbox
 import services.box_implementation as box
+import services.s3_implementation as s3
 
 
 def parse_arguments():
@@ -125,3 +126,4 @@ if __name__ == "__main__":
     else:
         utils.print_string(
             "Support for this service is not implemented yet", utils.PrintStyle.WARNING)
+ 

@@ -2,17 +2,15 @@ import bottle
 import logging
 import os
 import sys
-import unicodedata
 from threading import Thread, Event
 import webbrowser
 from wsgiref.simple_server import WSGIServer, WSGIRequestHandler, make_server
 
-import boxsdk
-import utils
-
 # hack to allow importing modules from parent directory
 sys.path.insert(0, os.path.abspath('..'))
 
+import boxsdk
+import utils
 
 class Box:
     def __init__(self):
@@ -111,6 +109,7 @@ class Box:
         """
         localdir = os.path.expanduser(localdir)
         localdir = localdir.rstrip(os.path.sep)
+        localdir = localdir.replace(os.path.sep,'/')
         if not os.path.exists(localdir):
             utils.print_string("'{}' does not exist in your filesystem".format(
                 localdir), utils.PrintStyle.ERROR)

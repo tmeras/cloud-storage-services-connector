@@ -3,13 +3,12 @@ import logging
 import os
 import sys
 import time
-import unicodedata
-
-import dropbox
-import utils
 
 # hack to allow importing modules from parent directory
 sys.path.insert(0, os.path.abspath('..'))
+
+import dropbox
+import utils
 
 ACCESS_TOKEN = "sl.BYQZoWR4pJA3_KLNaMvXOwsoZqMgtOtezg3BYJlktRb-u0CQLwb7n9uYCdTL_iXha0ibBQM6MB680Qf2I4rygREA8QZhVIQL6kTSu1irww4UiBLaCaundSVDMdJ95hqSldwEey4"
 
@@ -54,7 +53,6 @@ class Dropbox:
         if isinstance(md, dropbox.files.FileMetadata):
             logging.info("Dropbox path '{}' is a file".format(dbx_path))
 
-            # TODO: extract filename from given dropbox path (done)
             name = dbx_path.split('/')[-1]
             local_path += name
             with utils.stopwatch('download'):
@@ -69,7 +67,6 @@ class Dropbox:
                 "File '{}' downloaded successfully!".format(dbx_path.split('/')[-1]), utils.PrintStyle.SUCCESS)
         else:
             logging.info("Dropbox path '{}' is a directory".format(dbx_path))
-            # TODO: extract filename from given dropbox path (done)
             name = dbx_path.split('/')[-1]
             if not name.endswith('.zip'):
                 name += ".zip"
@@ -171,6 +168,7 @@ class Dropbox:
     def download_file(self, folder, subfolder, name):
         """
         Download a file. Do not store it locally
+
         Return the bytes of the file, or None if it doesn't exist.
         """
         path = '/%s/%s/%s' % (folder,
@@ -190,6 +188,7 @@ class Dropbox:
     def upload_file(self, fullname, folder, subfolder, name):
         """
         Upload a file.
+
         Return the request response, or None in case of error.
         """
         path = '/%s/%s/%s' % (folder,
@@ -214,12 +213,13 @@ class Dropbox:
 
 
 def no_redirect_OAuth2():
-    """Goes through a basic oauth flow using the existing long-lived token type
+    """
+    Goes through a basic oauth flow using the existing long-lived token type
     """
     APP_KEY = "t1uokr1i2qj9ot1"
     APP_SECRET = "yxrwv0tc5fipf8e"
 
-    auth_flow = DropboxOAuth2FlowNoRedirect(APP_KEY, APP_SECRET)
+    auth_flow = dropbox.DropboxOAuth2FlowNoRedirect(APP_KEY, APP_SECRET)
     authorize_url = auth_flow.start()
     utils.print_string("1. Go to: " + authorize_url, utils.PrintStyle.INFO)
     utils.print_string(

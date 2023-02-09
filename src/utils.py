@@ -25,6 +25,34 @@ def print_string(s, style=PrintStyle.INFO):
             print(colored(s, "green", attrs=["bold"]))
 
 
+def yesno(message, default):
+    """
+    Handy helper function to ask a yes/no question.
+    Special answers:
+    - q or quit exits the program
+    - p or pdb invokes the debugger
+    """
+    if default:
+        message += '? [Y/n] '
+    else:
+        message += '? [N/y] '
+    while True:
+        answer = input(message).strip().lower()
+        if not answer:
+            return default
+        if answer in ('y', 'yes'):
+            return True
+        if answer in ('n', 'no'):
+            return False
+        if answer in ('q', 'quit'):
+            print('Exit')
+            raise SystemExit(0)
+        if answer in ('p', 'pdb'):
+            import pdb
+            pdb.set_trace()
+        print_string('Please answer YES or NO',PrintStyle.WARNING)
+
+
 @contextlib.contextmanager
 def stopwatch(message):
     """

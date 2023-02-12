@@ -49,7 +49,6 @@ def parse_arguments():
         "-dp", "--dbx_path", required=True, metavar="",
         help="path to Dropbox file or folder that will be deleted"
     )
-    
 
     # Create subcommand for Box
     box_parser = subparsers.add_parser("box", help="use Box services")
@@ -75,7 +74,7 @@ def parse_arguments():
         "-lp", "--local_path", required=True, metavar="", help="path to local file or directory that will be uploaded"
     )
     box_uplparser.add_argument(
-        "-dirn", "--directory_name", required=False, default="", metavar="", help="name of Box directory where content will be uploaded"
+        "-dirn", "--directory_name", required=False, default="", metavar="", help="name of Box directory where content will be uploaded; leave empty to upload to root directory "
     )
 
     # Create subcommand for deleting Box content
@@ -85,13 +84,37 @@ def parse_arguments():
         "-bn", "--box_name", required=True, metavar="", help="name of Box content that should be deleted"
     )
 
-
     # Create subcommand for Google Drive
     gdrive_parser = subparsers.add_parser(
         "gdrive", help="use Google Drive services")
 
     # Create subcommand for Amazon S3
     s3_parser = subparsers.add_parser("s3", help="use Amazon S3 services")
+    s3_subparser = s3_parser.add_subparsers(
+        title="S3 actions", required=True, dest="s3_action")
+
+    # Create subcommand for downloading from S3
+    s3_dlparser = s3_subparser.add_parser(
+        "download", help="download S3 content")
+    s3_dlparser.add_argument("-lp", "--local_path", required=True, metavar="",
+                             help="path to local directory where content will be downloaded")
+    s3_dlparser.add_argument("-bn", "--bucket_name", required=True,
+                             metavar="", help="name of bucket to download from")
+    s3_dlparser.add_argument("-k", "--key", required=False, default="", metavar="",
+                             help="key/name of object to upload; leave empty to download bucket")
+
+    # Create subcommand for uploading to S3
+    s3_uplparser = s3_subparser.add_parser(
+        "upload", help="upload content to S3")
+    s3_uplparser.add_argument("-lp", "--local_path", required=True, metavar="",
+                              help="path to local file or directory that will be uplaoded")
+    s3_uplparser.add_argument("-bn", "--bucket_name", required=True, metavar="",
+                              help="name of bucket where content should be uploaded")
+
+    # Create subcommand for deleting S3 content
+    s3_delparser = s3_subparser.add_parser("delete",help="delete S3 content")
+    s3_delparser.add_argument("-bn","--bucket_name",required=True,metavar="",help="name of bucket")
+    s3_delparser.add_argument("-k","--key",required=False,default="",metavar="",help="key/name of object to delete; leave empty to delete bucket")
 
     # Create subcommand for Azure Blob storage
     blob_parser = subparsers.add_parser(
@@ -123,7 +146,14 @@ if __name__ == "__main__":
             bx.download(args.local_path.strip(), args.box_name.strip())
         elif args.box_action == 'delete':
             bx.delete(args.box_name.strip())
+    elif args.service == 's3':
+        s3 = s3.S3()
+        if args.s3_action == 'upload':
+            s3.upload(args.local_path.strip(),args.bucket_name.strip())
+        elif args.s3_action == 'download':
+            s3.download(args.local_path.strip(),args.bucket_name.strip(),args.key.strip())
+        elif args.s3_action == 'delete':
+            s3.delete(args.bucket_name.strip(),args.key.strip())
     else:
         utils.print_string(
             "Support for this service is not implemented yet", utils.PrintStyle.WARNING)
- 

@@ -124,14 +124,14 @@ class Box:
             for item in search_results:
                 folder_info = item.get()
                 bxpath = self.get_path(folder_info.id, True)
-                if utils.yesno('Should content be uploaded to %s ' % bxpath, True):
+                if utils.yesno('Upload to %s ' % bxpath, True):
                     break
             else:
                 utils.print_string('Cannot find Box folder with name: {}'.format(
                     bxname), utils.PrintStyle.ERROR)
                 return None
 
-        # Otherwise upload to root Box folder
+        # Otherwise get root Box folder
         else:
             bxpath = '/All Files'
             folder_info = self.client.root_folder().get()

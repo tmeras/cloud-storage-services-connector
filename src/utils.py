@@ -14,15 +14,14 @@ class PrintStyle(Enum):
 
 
 def print_string(s, style=PrintStyle.INFO):
-    match style:
-        case PrintStyle.INFO:
-            print(s)
-        case PrintStyle.WARNING:
-            print(colored(s, "yellow"))
-        case PrintStyle.ERROR:
-            print(colored(s, "red"))
-        case PrintStyle.SUCCESS:
-            print(colored(s, "green", attrs=["bold"]))
+    if style == PrintStyle.INFO:
+        print(s)
+    elif style == PrintStyle.WARNING:
+        print(colored(s, "yellow"))
+    elif style ==  PrintStyle.ERROR:
+        print(colored(s, "red"))
+    elif style ==  PrintStyle.SUCCESS:
+        print(colored(s, "green", attrs=["bold"]))
 
 
 def yesno(message, default):

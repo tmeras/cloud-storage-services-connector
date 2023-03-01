@@ -2,12 +2,13 @@ import logging
 import os
 import sys
 
+import boto3
+import botocore.exceptions
+import utils
+
 # hack to allow importing modules from parent directory
 sys.path.insert(0, os.path.abspath('..'))
 
-import utils
-import botocore.exceptions
-import boto3
 
 class S3:
     def __init__(self):
@@ -156,7 +157,8 @@ class S3:
             if e.response['ResponseMetadata']['HTTPStatusCode'] == 404:
                 utils.print_string("Warning: bucket '{}' doesn't exist".format(
                     bucket_name), utils.PrintStyle.WARNING)
-                if utils.yesno("Do you want to create bucket '{}' and continue with the upload".format(bucket_name), True):
+                if utils.yesno("Do you want to create bucket '{}' and continue with the upload".format(bucket_name),
+                               True):
                     if not self.create_bucket(bucket_name):
                         return None
                 else:

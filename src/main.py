@@ -75,7 +75,8 @@ def parse_arguments():
         "-lp", "--local_path", required=True, metavar="", help="path to local file or directory that will be uploaded"
     )
     box_uplparser.add_argument(
-        "-dir", "--directory_name", required=False, default="", metavar="", help="name of Box directory where content will be uploaded; leave empty to upload to root directory "
+        "-dir", "--directory_name", required=False, default="", metavar="",
+        help="name of Box directory where content will be uploaded; leave empty to upload to root directory "
     )
 
     # Create subcommand for deleting Box content
@@ -88,21 +89,25 @@ def parse_arguments():
     # Create subcommand for Google Drive
     gdrive_parser = subparsers.add_parser(
         "gdrive", help="use Google Drive services")
-    gdrive_subparser = gdrive_parser.add_subparsers(title="Google Drive actions",required=True,dest="gdrive_action")
+    gdrive_subparser = gdrive_parser.add_subparsers(title="Google Drive actions", required=True, dest="gdrive_action")
 
     # Create subcommand for downloading from Drive
-    gdrive_dlparser = gdrive_subparser.add_parser("download",help="download Drive content")
-    gdrive_dlparser.add_argument("-lp","--local_path",required=True,metavar="",help="path to local directory where content will be downloaded")
-    gdrive_dlparser.add_argument("-dn","--drive_name",required=True,metavar="",help="name of Drive content that will be downloaded")
+    gdrive_dlparser = gdrive_subparser.add_parser("download", help="download Drive content")
+    gdrive_dlparser.add_argument("-lp", "--local_path", required=True, metavar="",
+                                 help="path to local directory where content will be downloaded")
+    gdrive_dlparser.add_argument("-dn", "--drive_name", required=True, metavar="",
+                                 help="name of Drive content that will be downloaded")
 
     # Create subcommand for uploading to Drive
-    gdrive_uplparser = gdrive_subparser.add_parser("upload",help="upload content to Drive")
-    gdrive_uplparser.add_argument("-lp","--local_path",required=True,metavar="",help="path to local file or directory that will be uploaded")
-    gdrive_uplparser.add_argument("-dir","--directory_name",required=False,default="",metavar="",help="name of Drive content that will be uploaded; leave empty to pload to root directory")
+    gdrive_uplparser = gdrive_subparser.add_parser("upload", help="upload content to Drive")
+    gdrive_uplparser.add_argument("-lp", "--local_path", required=True, metavar="",
+                                  help="path to local file or directory that will be uploaded")
+    gdrive_uplparser.add_argument("-dir", "--directory_name", required=False, default="", metavar="",
+                                  help="name of Drive content that will be uploaded; leave empty to pload to root directory")
 
     # Create subcommand for deleting Drive content
-    gdrive_delparser = gdrive_subparser.add_parser("delete",help="delete Drive content")
-    gdrive_delparser.add_argument("-dn","--drive_name",help="name of Drive content that will be deleted")
+    gdrive_delparser = gdrive_subparser.add_parser("delete", help="delete Drive content")
+    gdrive_delparser.add_argument("-dn", "--drive_name", help="name of Drive content that will be deleted")
 
     # Create subcommand for Amazon S3
     s3_parser = subparsers.add_parser("s3", help="use Amazon S3 services")
@@ -128,9 +133,10 @@ def parse_arguments():
                               help="name of bucket where content should be uploaded")
 
     # Create subcommand for deleting S3 content
-    s3_delparser = s3_subparser.add_parser("delete",help="delete S3 content")
-    s3_delparser.add_argument("-bn","--bucket_name",required=True,metavar="",help="name of bucket")
-    s3_delparser.add_argument("-k","--key",required=False,default="",metavar="",help="key/name of object to delete; leave empty to delete bucket")
+    s3_delparser = s3_subparser.add_parser("delete", help="delete S3 content")
+    s3_delparser.add_argument("-bn", "--bucket_name", required=True, metavar="", help="name of bucket")
+    s3_delparser.add_argument("-k", "--key", required=False, default="", metavar="",
+                              help="key/name of object to delete; leave empty to delete bucket")
 
     # Create subcommand for Azure Blob storage
     blob_parser = subparsers.add_parser(
@@ -164,20 +170,20 @@ if __name__ == "__main__":
             bx.delete(args.box_name.strip())
     elif args.service == 'gdrive':
         gd = gdrive.Gdrive()
-        if args.gdrive_action=='upload':
-            gd.upload(args.local_path.strip(),args.directory_name.strip())
-        elif args.gdrive_action=='download':
-            gd.download(args.local_path.strip(),args.drive_name.strip())
-        elif args.gdrive_action=='delete':
+        if args.gdrive_action == 'upload':
+            gd.upload(args.local_path.strip(), args.directory_name.strip())
+        elif args.gdrive_action == 'download':
+            gd.download(args.local_path.strip(), args.drive_name.strip())
+        elif args.gdrive_action == 'delete':
             gd.delete(args.drive_name.strip())
     elif args.service == 's3':
         s3 = s3.S3()
         if args.s3_action == 'upload':
-            s3.upload(args.local_path.strip(),args.bucket_name.strip())
+            s3.upload(args.local_path.strip(), args.bucket_name.strip())
         elif args.s3_action == 'download':
-            s3.download(args.local_path.strip(),args.bucket_name.strip(),args.key.strip())
+            s3.download(args.local_path.strip(), args.bucket_name.strip(), args.key.strip())
         elif args.s3_action == 'delete':
-            s3.delete(args.bucket_name.strip(),args.key.strip())
+            s3.delete(args.bucket_name.strip(), args.key.strip())
     else:
         utils.print_string(
             "Support for this service is not implemented yet", utils.PrintStyle.WARNING)

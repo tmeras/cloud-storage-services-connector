@@ -1,18 +1,19 @@
+import io
 import logging
 import os
 import sys
-import io
+
+import utils
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 
 # hack to allow importing modules from parent directory
 sys.path.insert(0, os.path.abspath('..'))
 
-from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
-from googleapiclient.errors import HttpError
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
-import utils
 
 class Gdrive:
     def __init__(self):
@@ -45,7 +46,8 @@ class Gdrive:
             page_token = None
             while True:
                 response = self.client.files().list(q="'" + folder_id + "' in parents and trashed = false",
-                                                    spaces='drive', fields='nextPageToken, files(id, name, mimeType)', pageToken=page_token).execute()
+                                                    spaces='drive', fields='nextPageToken, files(id, name, mimeType)',
+                                                    pageToken=page_token).execute()
                 files.extend(response.get('files', []))
                 page_token = response.get('nextPageToken', None)
                 if page_token is None:
@@ -57,7 +59,8 @@ class Gdrive:
 
         for item in files:
             if item.get('name') == key:
-                if (key_is_folder and item.get('mimeType') == 'application/vnd.google-apps.folder') or ((not key_is_folder) and item.get('mimeType') != 'application/vnd.google-apps.folder'):
+                if (key_is_folder and item.get('mimeType') == 'application/vnd.google-apps.folder') or (
+                        (not key_is_folder) and item.get('mimeType') != 'application/vnd.google-apps.folder'):
                     logging.info("Found '{}', id: {}".format(
                         key, item.get('id')))
                     return item.get('id')
@@ -76,7 +79,8 @@ class Gdrive:
                 file_mimeType = file.get('mimeType')
 
                 # Download Google Workspace document as PDF
-                if file_mimeType.startswith("application/vnd.google-apps") and not file_mimeType.endswith("script+json"):
+                if file_mimeType.startswith("application/vnd.google-apps") and not file_mimeType.endswith(
+                        "script+json"):
                     logging.info(
                         "Initiating resumable download of Google Workspace Document '{}'".format(file_name))
                     request = self.client.files().export_media(
@@ -127,7 +131,8 @@ class Gdrive:
             page_token = None
             while True:
                 response = self.client.files().list(q="'" + folder_id + "' in parents and trashed = false",
-                                                    spaces='drive', fields='nextPageToken, files(id, name, mimeType)', pageToken=page_token).execute()
+                                                    spaces='drive', fields='nextPageToken, files(id, name, mimeType)',
+                                                    pageToken=page_token).execute()
                 items.extend(response.get('files', []))
                 page_token = response.get('nextPageToken', None)
                 if page_token is None:
@@ -190,7 +195,7 @@ class Gdrive:
                 response = self.client.files().list(q="name = '" + gname + "' and trashed = false",
                                                     spaces='drive',
                                                     fields='nextPageToken, '
-                                                    'files(id, name, mimeType)',
+                                                           'files(id, name, mimeType)',
                                                     pageToken=page_token).execute()
 
                 files.extend(response.get('files', []))
@@ -300,11 +305,12 @@ class Gdrive:
                 files = []
                 page_token = None
                 while True:
-                    response = self.client.files().list(q="mimeType='application/vnd.google-apps.folder' and name = '" + gname + "' and trashed = false",
-                                                        spaces='drive',
-                                                        fields='nextPageToken, '
-                                                        'files(id, name)',
-                                                        pageToken=page_token).execute()
+                    response = self.client.files().list(
+                        q="mimeType='application/vnd.google-apps.folder' and name = '" + gname + "' and trashed = false",
+                        spaces='drive',
+                        fields='nextPageToken, '
+                               'files(id, name)',
+                        pageToken=page_token).execute()
 
                     files.extend(response.get('files', []))
                     page_token = response.get('nextPageToken', None)
@@ -421,7 +427,7 @@ class Gdrive:
                 response = self.client.files().list(q="name = '" + gname + "' and trashed = false",
                                                     spaces='drive',
                                                     fields='nextPageToken, '
-                                                    'files(id, name)',
+                                                           'files(id, name)',
                                                     pageToken=page_token).execute()
 
                 files.extend(response.get('files', []))

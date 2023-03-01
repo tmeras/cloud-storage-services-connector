@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 import time
+import requests
 
 # hack to allow importing modules from parent directory
 sys.path.insert(0, os.path.abspath('..'))
@@ -10,8 +11,10 @@ sys.path.insert(0, os.path.abspath('..'))
 import dropbox
 import utils
 
-ACCESS_TOKEN = "sl.BYQZoWR4pJA3_KLNaMvXOwsoZqMgtOtezg3BYJlktRb-u0CQLwb7n9uYCdTL_iXha0ibBQM6MB680Qf2I4rygREA8QZhVIQL6kTSu1irww4UiBLaCaundSVDMdJ95hqSldwEey4"
+ACCESS_TOKEN = "sl.BZoRcNjLLC1OoSdIRoD0xWAPyDPgbMSguQ5WpsIxAVoTkKVoqGqsw8CZo04B3A-CHiNDtGcNhBizRptIJq0xiev_Lc_zwHr09tSHqTPEl2MK0pv-41GRaJyDNT9zmmR_FFvW124"
 
+# Upload chunk size
+CHUNK_SIZE = 8 * 1024 * 1024
 
 class Dropbox:
     def __init__(self):
@@ -85,11 +88,11 @@ class Dropbox:
             utils.print_string("Folder named {} downloaded successfully!".format(
                 dbx_path.split('/')[-1]), utils.PrintStyle.SUCCESS)
 
-    def upload(self, rootdir, folder):
+    def upload(self, rootdir, dbx_path):
         """ 
         Upload a file or folder to Dropbox
         """
-        folder = folder.rstrip('/')
+        dbx_path = dbx_path.rstrip('/')
 
         rootdir = os.path.expanduser(rootdir)
         rootdir = rootdir.rstrip(os.path.sep)
@@ -99,7 +102,7 @@ class Dropbox:
                 "'{}' does not exist in your filesystem".format(rootdir), utils.PrintStyle.ERROR)
             return None
 
-        logging.info('Dropbox folder:' + folder)
+        logging.info('Dropbox folder:' + dbx_path)
         logging.info('Local directory:' + rootdir)
 
         # Upload file
@@ -107,14 +110,15 @@ class Dropbox:
             logging.info(rootdir + ' is a local file')
             file_name = rootdir.split('/')[-1]
             logging.info("Uploading file '{}' ".format(rootdir))
-            self.upload_file(rootdir, folder, "", file_name)
+            self.upload_file(rootdir, dbx_path, "", file_name)
 
         # Upload folder content
         elif os.path.isdir(rootdir):
             logging.info(rootdir + ' is a local directory')
             for dn, dirs, files in os.walk(rootdir):
                 subfolder = dn[len(rootdir):].strip(os.path.sep)
-                logging.info("Descending into '{}' ...".format(subfolder))
+                if subfolder != '':
+                    logging.info("Descending into '{}' ...".format(subfolder))
 
                 # First do all the files
                 for name in files:
@@ -130,7 +134,7 @@ class Dropbox:
                     else:
                         logging.info(
                             "Uploading file '{}' ...".format(fullname))
-                        self.upload_file(fullname, folder, subfolder, name)
+                        self.upload_file(fullname, dbx_path, subfolder, name)
 
                 # Then choose which subdirectories to traverse
                 keep = []
@@ -149,7 +153,7 @@ class Dropbox:
                         keep.append(name)
                 dirs[:] = keep
 
-        utils.print_string('All uploads successfull!',
+        utils.print_string('All uploads successfull',
                            utils.PrintStyle.SUCCESS)
 
     def delete(self, dbx_path):
@@ -165,51 +169,61 @@ class Dropbox:
         utils.print_string("Successfully deleted {}".format(
             md.name), utils.PrintStyle.SUCCESS)
 
-    def download_file(self, folder, subfolder, name):
+    def upload_file(self, fullname, dbx_path, subfolder, name):
         """
-        Download a file. Do not store it locally
-
-        Return the bytes of the file, or None if it doesn't exist.
+        Upload a file
         """
-        path = '/%s/%s/%s' % (folder,
+        path = '/%s/%s/%s' % (dbx_path,
                               subfolder.replace(os.path.sep, '/'), name)
         while '//' in path:
             path = path.replace('//', '/')
-        with utils.stopwatch('download'):
-            try:
-                md, res = self.client.files_download(path)
-            except dropbox.exceptions.ApiError as err:
-                utils.print_string("Could not download '{}': {}".format(
-                    path, err), utils.PrintStyle.ERROR)
-                return None
-        data = res.content
-        return data
 
-    def upload_file(self, fullname, folder, subfolder, name):
-        """
-        Upload a file.
-
-        Return the request response, or None in case of error.
-        """
-        path = '/%s/%s/%s' % (folder,
-                              subfolder.replace(os.path.sep, '/'), name)
-        while '//' in path:
-            path = path.replace('//', '/')
         mode = (dropbox.files.WriteMode.overwrite)
         mtime = os.path.getmtime(fullname)
+
         with open(fullname, 'rb') as f:
-            data = f.read()
-        with utils.stopwatch('upload %d bytes' % len(data)):
-            try:
-                res = self.client.files_upload(
-                    data, path, mode,
-                    client_modified=datetime.datetime(*time.gmtime(mtime)[:6]),
-                    mute=True)
-            except dropbox.exceptions.ApiError as err:
-                utils.print_string("Could not upload file '{}': {}".format(
-                    path, err), utils.PrintStyle.ERROR)
-                return None
-        return res
+            file_size = os.path.getsize(fullname)
+            with utils.stopwatch('upload of %d bytes' % file_size):
+
+                    # Small file, upload in a single request
+                    if file_size <= CHUNK_SIZE:
+                        try:
+                            logging.info("Uploading '{}' in a single request ".format(fullname))
+                            self.client.files_upload(
+                                f.read(), path, mode,
+                                client_modified=datetime.datetime(*time.gmtime(mtime)[:6]),
+                                mute=True)
+                        except dropbox.exceptions.ApiError as e:
+                            utils.print_string("Could not upload file '{}': {}".format(
+                                path, e), utils.PrintStyle.ERROR)
+                            sys.exit()   
+                    
+                    # Use chunked upload
+                    else:
+                        try:
+                            logging.info("Uploading '{}' in chunks ".format(fullname))
+                            uploader = self.client.files_upload_session_start(f.read(CHUNK_SIZE))
+                            cursor = dropbox.files.UploadSessionCursor(session_id = uploader.session_id, offset = f.tell())
+                            commit = dropbox.files.CommitInfo(path = path)
+                            while f.tell()<file_size:
+                                try:
+                                    current_offset = f.tell()
+                                    if (file_size - f.tell()) <= CHUNK_SIZE:
+                                        self.client.files_upload_session_finish(f.read(CHUNK_SIZE),cursor,commit)
+                                    else:
+                                        self.client.files_upload_session_append_v2(f.read(CHUNK_SIZE),cursor)
+                                        cursor.offset = f.tell()
+                    
+                                # Attempt to resume failed upload session
+                                except requests.exceptions.ConnectionError as e:
+                                        f.seek(current_offset)
+                                        cursor.offset = current_offset
+                        except dropbox.exceptions.ApiError as e:
+                            utils.print_string("Could not upload file '{}' in chunks: {}".format(
+                                path, e), utils.PrintStyle.ERROR)
+                            sys.exit()   
+
+        utils.print_string("Successfully uploaded '{}'".format(fullname),utils.PrintStyle.SUCCESS)     
 
 
 def no_redirect_OAuth2():

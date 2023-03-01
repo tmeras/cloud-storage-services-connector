@@ -1,16 +1,20 @@
-import bottle
+import hashlib
 import logging
 import os
 import sys
-from threading import Thread, Event
 import webbrowser
+from threading import Thread, Event
 from wsgiref.simple_server import WSGIServer, WSGIRequestHandler, make_server
+
+import bottle
+import boxsdk
+import utils
 
 # hack to allow importing modules from parent directory
 sys.path.insert(0, os.path.abspath('..'))
 
-import boxsdk
-import utils
+MB = 1024 * 1024
+
 
 class Box:
     def __init__(self):
@@ -20,7 +24,7 @@ class Box:
         # Using developer token
         auth = boxsdk.OAuth2(client_id='u5jubneda8hf7va31wdhgjv0l4poqykj',
                              client_secret='vKAy2N7rsHO99e00OOGB54AMDMKoiA0p',
-                             access_token='4fwp1VQhawgttGTns6uMSrdvuqQ5lBia')
+                             access_token='2xmyPiB4UZ53LJ9zsALXUYxosBfoZaIO')
         self.client = boxsdk.Client(auth)
 
     def get_path(self, id, is_folder=False):
@@ -103,13 +107,80 @@ class Box:
         utils.print_string("Successfully downloaded '{}'".format(
             item_info.name), utils.PrintStyle.SUCCESS)
 
+    def upload_file(self, localdir, folder_id, file_id):
+        """
+        Upload file if it doesn't exist
+
+        If the file already exists, update it
+
+        Use chunked upload/update for files larger than 30 MB
+        """
+        file_size = os.path.getsize(localdir)
+
+        with open(localdir, 'rb') as f:
+
+            # Large file, upload in chunks
+            if file_size > 30 * MB:
+                try:
+                    sha1 = hashlib.sha1()
+                    parts = []
+
+                    # Upload file if it doesn't exist, else update it
+                    if file_id is None:
+                        logging.info("Uploading '{}' in chunks".format(localdir))
+                        uploader = self.client.folder(folder_id).create_upload_session(file_size=file_size,
+                                                                                       file_name=localdir.split('/')[
+                                                                                           -1])
+                    else:
+                        logging.info("Updating '{}' in chunks".format(localdir))
+                        uploader = self.client.file(file_id).create_upload_session(file_size=file_size)
+
+                    session_id = uploader.id
+                    bytes_uploaded = 0
+                    for part_num in range(uploader.total_parts):
+                        chunk = f.read(uploader.part_size)
+                        uploaded_part = uploader.upload_part_bytes(chunk, part_num * uploader.part_size, file_size)
+                        bytes_uploaded += len(chunk)
+                        logging.info("Uploaded {} MB".format(bytes_uploaded / (1024 * 1024)))
+                        parts.append(uploaded_part)
+                        sha1.update(chunk)
+
+                    content_sha1 = sha1.digest()
+                    logging.info("Chunk size used: {} MB".format((uploader.part_size) / (1024 * 1024)))
+                    logging.info("Session id: {}".format(session_id))
+
+                    uploader.commit(content_sha1=content_sha1, parts=parts)
+                    utils.print_string("Chunked upload of '{}' completed".format(localdir), utils.PrintStyle.SUCCESS)
+
+                except boxsdk.BoxAPIException as e:
+                    utils.print_string("Could not upload '{}' in chunks: {}".format(localdir, e),
+                                       utils.PrintStyle.ERROR)
+                    sys.exit()
+
+            # Small file, upload in one request           
+            else:
+                try:
+                    # Upload file it doesn't exist, else update it
+                    if file_id is None:
+                        logging.info("Uploading '{}' in a single request".format(localdir))
+                        self.client.folder(folder_id).upload(localdir)
+                    else:
+                        logging.info("Updating '{}' in a single request".format(localdir))
+                        self.client.file(file_id).update_contents(localdir)
+
+                    utils.print_string("Upload of '{}' completed".format(localdir), utils.PrintStyle.SUCCESS)
+
+                except boxsdk.BoxAPIException as e:
+                    utils.print_string("Could not upload '{}': {}".format(localdir, e), utils.PrintStyle.ERROR)
+                    sys.exit()
+
     def upload(self, localdir, bxname):
         """
         Upload a file or folder to Box
         """
         localdir = os.path.expanduser(localdir)
         localdir = localdir.rstrip(os.path.sep)
-        localdir = localdir.replace(os.path.sep,'/')
+        localdir = localdir.replace(os.path.sep, '/')
         if not os.path.exists(localdir):
             utils.print_string("'{}' does not exist in your filesystem".format(
                 localdir), utils.PrintStyle.ERROR)
@@ -146,19 +217,7 @@ class Box:
             folder_id = folder_info.id
             key = localdir.split('/')[-1]
             id = self.exists(self.client.folder(folder_id), key, 'file')
-
-            # If file doesn't already exist, upload it, otherwise update it
-            try:
-                if id is None:
-                    logging.info('Uploading ' + localdir)
-                    self.client.folder(folder_id).upload(localdir)
-                else:
-                    logging.info('Updating ' + localdir)
-                    self.client.file(id).update_contents(localdir)
-            except boxsdk.BoxAPIException as e:
-                utils.print_string("Could not upload file '{}': {}".format(
-                    localdir, e), utils.PrintStyle.ERROR)
-                return None
+            self.upload_file(localdir, folder_id.get().id, id)
 
         # Upload folder content
         elif os.path.isdir(localdir):
@@ -187,19 +246,7 @@ class Box:
                         logging.info('Skipping generated file: ' + name)
                     else:
                         id = self.exists(current_folder, name, 'file')
-
-                        # If file doesn't already exist, upload it, otherwise update it
-                        try:
-                            if id is None:
-                                logging.info('Uploading ' + name)
-                                current_folder.upload(fullname)
-                            else:
-                                logging.info('Updating ' + name)
-                                self.client.file(id).update_contents(fullname)
-                        except boxsdk.BoxAPIException as e:
-                            utils.print_string("Could not upload file '{}': {}".format(
-                                fullname, e), utils.PrintStyle.ERROR)
-                            return None
+                        self.upload_file(fullname, current_folder.get().id, id)
 
                 # Then choose which subdirectories to traverse
                 keep = []
@@ -223,7 +270,7 @@ class Box:
                         folders[os.path.join(dn, name)] = id
                 dirs[:] = keep
 
-        utils.print_string("All uploads ok!", utils.PrintStyle.SUCCESS)
+        utils.print_string("All uploads successfull", utils.PrintStyle.SUCCESS)
 
     def delete(self, bxname):
         """
@@ -255,7 +302,8 @@ class Box:
 
 
 def authenticate_OAuth2():
-    """Authenticate using traditional 3-legged OAuth2
+    """
+    Authenticate using traditional 3-legged OAuth2
     """
     CLIENT_ID = 'u5jubneda8hf7va31wdhgjv0l4poqykj'
     CLIENT_SECRET = 'vKAy2N7rsHO99e00OOGB54AMDMKoiA0p'
@@ -297,7 +345,7 @@ def authenticate_OAuth2():
     )
     auth_url, csrf_token = oauth.get_authorization_url('http://localhost:8080')
 
-    # Redirect user to auth_url, where they will enter thei Box credentials
+    # Redirect user to auth_url, where they will enter their Box credentials
     webbrowser.open(auth_url)
 
     # When user is redirected to localhost, exchange auth_code for access and refresh token

@@ -18,10 +18,12 @@ def print_string(s, style=PrintStyle.INFO):
         print(s)
     elif style == PrintStyle.WARNING:
         print(colored(s, "yellow"))
-    elif style ==  PrintStyle.ERROR:
+    elif style == PrintStyle.ERROR:
         print(colored(s, "red"))
-    elif style ==  PrintStyle.SUCCESS:
+    elif style == PrintStyle.SUCCESS:
         print(colored(s, "green", attrs=["bold"]))
+    else:
+        print(s)
 
 
 def yesno(message, default):

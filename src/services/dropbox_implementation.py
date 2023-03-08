@@ -4,20 +4,22 @@ import os
 import sys
 import time
 import requests
-
 import dropbox
 import requests
 import utils
+from data_service import DataService
 
 # hack to allow importing modules from parent directory
 sys.path.insert(0, os.path.abspath('..'))
 
-ACCESS_TOKEN = "sl.BZoRcNjLLC1OoSdIRoD0xWAPyDPgbMSguQ5WpsIxAVoTkKVoqGqsw8CZo04B3A-CHiNDtGcNhBizRptIJq0xiev_Lc_zwHr09tSHqTPEl2MK0pv-41GRaJyDNT9zmmR_FFvW124"
+
+
+ACCESS_TOKEN = "sl.BaO2FgyVXm3qvApX1boMYbCl1G94_pNlntMatDSMQfF3kWLqSro2d0K48kwM6r_gfF7S_P8LBiIa50Yhel3RwpWVUZPrqLkSB__-k1TOAfyAdacRrcZDwkSnwywPe3mfEeMoFe8"
 
 # Upload chunk size
 CHUNK_SIZE = 8 * 1024 * 1024
 
-class Dropbox:
+class Dropbox(DataService):
     def __init__(self):
         self.client = dropbox.Dropbox(ACCESS_TOKEN)
 
@@ -88,6 +90,63 @@ class Dropbox:
                     return None
             utils.print_string("Folder named {} downloaded successfully!".format(
                 dbx_path.split('/')[-1]), utils.PrintStyle.SUCCESS)
+        
+    
+    def upload_file(self, fullname, dbx_path, subfolder, name):
+        """
+        Upload a file
+        """
+        path = '/%s/%s/%s' % (dbx_path,
+                              subfolder.replace(os.path.sep, '/'), name)
+        while '//' in path:
+            path = path.replace('//', '/')
+
+        mode = (dropbox.files.WriteMode.overwrite)
+        mtime = os.path.getmtime(fullname)
+
+        with open(fullname, 'rb') as f:
+            file_size = os.path.getsize(fullname)
+            with utils.stopwatch('upload of %d bytes' % file_size):
+
+                # Small file, upload in a single request
+                if file_size <= CHUNK_SIZE:
+                    try:
+                        logging.info("Uploading '{}' in a single request ".format(fullname))
+                        self.client.files_upload(
+                            f.read(), path, mode,
+                            client_modified=datetime.datetime(*time.gmtime(mtime)[:6]),
+                            mute=True)
+                    except dropbox.exceptions.ApiError as e:
+                        utils.print_string("Could not upload file '{}': {}".format(
+                            path, e), utils.PrintStyle.ERROR)
+                        sys.exit()
+
+                        # Use chunked upload
+                else:
+                    try:
+                        logging.info("Uploading '{}' in chunks ".format(fullname))
+                        uploader = self.client.files_upload_session_start(f.read(CHUNK_SIZE))
+                        cursor = dropbox.files.UploadSessionCursor(session_id=uploader.session_id, offset=f.tell())
+                        commit = dropbox.files.CommitInfo(path=path)
+                        while f.tell() < file_size:
+                            try:
+                                current_offset = f.tell()
+                                if (file_size - f.tell()) <= CHUNK_SIZE:
+                                    self.client.files_upload_session_finish(f.read(CHUNK_SIZE), cursor, commit)
+                                else:
+                                    self.client.files_upload_session_append_v2(f.read(CHUNK_SIZE), cursor)
+                                    cursor.offset = f.tell()
+
+                            # Attempt to resume failed upload session
+                            except requests.exceptions.ConnectionError as e:
+                                f.seek(current_offset)
+                                cursor.offset = current_offset
+                    except dropbox.exceptions.ApiError as e:
+                        utils.print_string("Could not upload file '{}' in chunks: {}".format(
+                            path, e), utils.PrintStyle.ERROR)
+                        sys.exit()
+
+        utils.print_string("Successfully uploaded '{}'".format(fullname), utils.PrintStyle.SUCCESS)
 
     def upload(self, rootdir, dbx_path):
         """ 
@@ -170,62 +229,6 @@ class Dropbox:
         utils.print_string("Successfully deleted {}".format(
             md.name), utils.PrintStyle.SUCCESS)
 
-    def upload_file(self, fullname, dbx_path, subfolder, name):
-        """
-        Upload a file
-        """
-        path = '/%s/%s/%s' % (dbx_path,
-                              subfolder.replace(os.path.sep, '/'), name)
-        while '//' in path:
-            path = path.replace('//', '/')
-
-        mode = (dropbox.files.WriteMode.overwrite)
-        mtime = os.path.getmtime(fullname)
-
-        with open(fullname, 'rb') as f:
-            file_size = os.path.getsize(fullname)
-            with utils.stopwatch('upload of %d bytes' % file_size):
-
-                # Small file, upload in a single request
-                if file_size <= CHUNK_SIZE:
-                    try:
-                        logging.info("Uploading '{}' in a single request ".format(fullname))
-                        self.client.files_upload(
-                            f.read(), path, mode,
-                            client_modified=datetime.datetime(*time.gmtime(mtime)[:6]),
-                            mute=True)
-                    except dropbox.exceptions.ApiError as e:
-                        utils.print_string("Could not upload file '{}': {}".format(
-                            path, e), utils.PrintStyle.ERROR)
-                        sys.exit()
-
-                        # Use chunked upload
-                else:
-                    try:
-                        logging.info("Uploading '{}' in chunks ".format(fullname))
-                        uploader = self.client.files_upload_session_start(f.read(CHUNK_SIZE))
-                        cursor = dropbox.files.UploadSessionCursor(session_id=uploader.session_id, offset=f.tell())
-                        commit = dropbox.files.CommitInfo(path=path)
-                        while f.tell() < file_size:
-                            try:
-                                current_offset = f.tell()
-                                if (file_size - f.tell()) <= CHUNK_SIZE:
-                                    self.client.files_upload_session_finish(f.read(CHUNK_SIZE), cursor, commit)
-                                else:
-                                    self.client.files_upload_session_append_v2(f.read(CHUNK_SIZE), cursor)
-                                    cursor.offset = f.tell()
-
-                            # Attempt to resume failed upload session
-                            except requests.exceptions.ConnectionError as e:
-                                f.seek(current_offset)
-                                cursor.offset = current_offset
-                    except dropbox.exceptions.ApiError as e:
-                        utils.print_string("Could not upload file '{}' in chunks: {}".format(
-                            path, e), utils.PrintStyle.ERROR)
-                        sys.exit()
-
-        utils.print_string("Successfully uploaded '{}'".format(fullname), utils.PrintStyle.SUCCESS)
-
 
 def no_redirect_OAuth2():
     """
@@ -252,3 +255,6 @@ def no_redirect_OAuth2():
         utils.print_string("Authentication succesfull!",
                            utils.PrintStyle.SUCCESS)
         return client  # Return the Dropbox object to later use it for requests to Dropbox API
+    
+if __name__=='__main__':
+    dbx = DataService.build(dropbox)

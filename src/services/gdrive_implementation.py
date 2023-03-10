@@ -2,7 +2,7 @@ import io
 import logging
 import os
 import sys
-
+from services.data_service import DataService
 import utils
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -15,7 +15,7 @@ from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 sys.path.insert(0, os.path.abspath('..'))
 
 
-class Gdrive:
+class Gdrive(DataService):
     def __init__(self):
         self.client = authenticate_OAuth2()
 
@@ -61,12 +61,54 @@ class Gdrive:
             if item.get('name') == key:
                 if (key_is_folder and item.get('mimeType') == 'application/vnd.google-apps.folder') or (
                         (not key_is_folder) and item.get('mimeType') != 'application/vnd.google-apps.folder'):
-                    logging.info("Found '{}', id: {}".format(
-                        key, item.get('id')))
                     return item.get('id')
         else:
             logging.info("Not found '{}'".format(key))
             return None
+    
+    def traverse(self,gd_path):
+        """
+        Traverse Google Drive directory structure based on given path,
+
+        Return the id and type of the item at the end of the path
+        """
+        if gd_path.endswith('/'):
+            is_folder = True
+            key_type = 'folder'
+        else:
+            is_folder = False
+            key_type = 'file'
+
+        gd_path = gd_path.strip('/')
+        gd_path = gd_path.removeprefix('My Drive')
+        gd_path = gd_path.lstrip('/')
+
+        # Root folder requested
+        if gd_path == "":
+            return 'root','folder'
+
+        logging.info("Traversing '{}'".format(gd_path))
+
+        current_folder_id = 'root'
+        names = gd_path.split('/')
+        for item in names:
+            # Reached final item, return its id if it exists on Google Drive
+            if item == names[-1]:
+                logging.info("At final item")
+                id = self.exists(current_folder_id, item, is_folder)
+                if id is not None:
+                    return id, is_folder
+                else:
+                    utils.print_string("Invalid path: {} '{}' doesn't exist".format(key_type,item),utils.PrintStyle.ERROR)
+                    sys.exit()
+            else:   
+                id = self.exists(current_folder_id, item, True)
+                if id is not None:
+                    current_folder_id = id
+                else:
+                    utils.print_string("Invalid path: Folder '{}' doesn't exist".format(item),utils.PrintStyle.ERROR)
+                    sys.exit()
+
 
     def download_file(self, localdir, file_id, old_downloader=None):
         """
@@ -107,7 +149,7 @@ class Gdrive:
                     utils.print_string("Downloaded %d%%." % int(
                         status.progress() * 100), utils.PrintStyle.INFO)
 
-            utils.print_string("File '{}' downloaded successfully!".format(
+            utils.print_string("File '{}' downloaded successfully".format(
                 file_name), utils.PrintStyle.SUCCESS)
         except HttpError as e:
             if e.resp.status in [404]:
@@ -149,7 +191,6 @@ class Gdrive:
             current_folder_name))
 
         for item in items:
-
             # Create directory locally, if it doesn't exist
             path = os.path.join(localdir, current_folder_name)
             if not os.path.isdir(path):
@@ -171,7 +212,7 @@ class Gdrive:
                 else:
                     self.download_file(path, item.get('id'))
 
-    def download(self, localdir, gname):
+    def download(self, localdir, gd_path):
         """
         Download Google Drive file or directory
         """
@@ -183,53 +224,23 @@ class Gdrive:
                 localdir), utils.PrintStyle.ERROR)
             return None
 
-        gpath = ""
-        gitem = None
 
-        # Search for Google Drive content with the name gname
-        try:
-            logging.info("Searching for '{}'".format(gname))
-            files = []
-            page_token = None
-            while True:
-                response = self.client.files().list(q="name = '" + gname + "' and trashed = false",
-                                                    spaces='drive',
-                                                    fields='nextPageToken, '
-                                                           'files(id, name, mimeType)',
-                                                    pageToken=page_token).execute()
-
-                files.extend(response.get('files', []))
-                page_token = response.get('nextPageToken', None)
-                if page_token is None:
-                    break
-        except HttpError as e:
-            utils.print_string("Error while searching for '{}' : {}".format(
-                gname, e), utils.PrintStyle.ERROR)
-            return None
-
-        logging.info("Result: {}".format(files))
-        for item in files:
-            gpath = self.get_path(item.get('id'))
-            gitem = item
-            if utils.yesno("Download '{}'".format(gpath), True):
-                break
-        else:
-            utils.print_string("Could not find '{}' on Google Drive".format(
-                gname), utils.PrintStyle.ERROR)
-            return None
+        # Get item that will be downloaded
+        id, is_folder = self.traverse(gd_path)
+        item = self.client.files().get(fileId=id).execute()
 
         logging.info("Local directory: " + localdir)
-        logging.info("Google Drive content: " + gpath)
+        logging.info("Google Drive path: " + gd_path)
 
         try:
             # Download directory
-            if gitem.get('mimeType') == "application/vnd.google-apps.folder":
-                self.download_directory(localdir, gitem.get('id'))
+            if item.get('mimeType') == "application/vnd.google-apps.folder":
+                self.download_directory(localdir, item.get('id'))
             else:
-                self.download_file(localdir, gitem.get('id'))
+                self.download_file(localdir, item.get('id'))
         except HttpError as e:
             utils.print_string("Could not download '{}' : {}".format(
-                gpath, e), utils.PrintStyle.ERROR)
+                gd_path, e), utils.PrintStyle.ERROR)
             return None
 
         utils.print_string("All downloads ok", utils.PrintStyle.SUCCESS)
@@ -243,7 +254,7 @@ class Gdrive:
                 logging.info(
                     "Initiating resumable upload of '{}'".format(localdir))
                 metadata = {'name': localdir.split('/')[-1]}
-                media = MediaFileUpload(localdir, resumable=True)
+                media = MediaFileUpload(localdir,  chunksize=1048576, resumable=True)
 
                 # Upload new file, otherwise update existing file
                 if file_id is None:
@@ -267,7 +278,7 @@ class Gdrive:
                     utils.print_string("Uploaded %d%%." % int(
                         status.progress() * 100), utils.PrintStyle.INFO)
 
-            utils.print_string("File '{}' uploaded successfully!".format(
+            utils.print_string("File '{}' uploaded successfully".format(
                 localdir), utils.PrintStyle.SUCCESS)
         except HttpError as e:
             if e.resp.status in [404]:
@@ -283,7 +294,7 @@ class Gdrive:
                     localdir, e), utils.PrintStyle.ERROR)
                 sys.exit()
 
-    def upload(self, localdir, gname):
+    def upload(self, localdir, gd_path):
         """
         Upload file or directory to Google Drive
         """
@@ -295,50 +306,15 @@ class Gdrive:
                 localdir), utils.PrintStyle.ERROR)
             return None
 
-        gpath = ""
         gfolder = None
 
-        # Search for non-root Google Drive folder with the name gname
-        if gname != '':
-            try:
-                logging.info("Searching for folder '{}'".format(gname))
-                files = []
-                page_token = None
-                while True:
-                    response = self.client.files().list(
-                        q="mimeType='application/vnd.google-apps.folder' and name = '" + gname + "' and trashed = false",
-                        spaces='drive',
-                        fields='nextPageToken, '
-                               'files(id, name)',
-                        pageToken=page_token).execute()
+        # Get Google Drive directory to upload to
+        id, is_folder = self.traverse(gd_path)
+        gfolder = self.client.files().get(fileId=id).execute()
 
-                    files.extend(response.get('files', []))
-                    page_token = response.get('nextPageToken', None)
-                    if page_token is None:
-                        break
-            except HttpError as e:
-                utils.print_string("Error while searching for folder '{}' : {}".format(
-                    gname, e), utils.PrintStyle.ERROR)
-                return None
-
-            logging.info("Folders: {}".format(files))
-            for folder in files:
-                gpath = self.get_path(folder.get('id'))
-                gfolder = folder
-                if utils.yesno("Upload to '{}'".format(gpath), True):
-                    break
-            else:
-                utils.print_string("Could not find Google Drive folder with name '{}'".format(
-                    gname), utils.PrintStyle.ERROR)
-                return None
-
-        # Otherwise get root Google Drive folder
-        else:
-            gpath = "My Drive"
-            gfolder = self.client.files().get(fileId='root').execute()
 
         logging.info("Local directory: " + localdir)
-        logging.info("Google Drive directory: " + gpath)
+        logging.info("Google Drive path: " + gd_path)
 
         # Upload file
         if os.path.isfile(localdir):
@@ -412,49 +388,23 @@ class Gdrive:
                                     os.path.join(dn, name), e), utils.PrintStyle.ERROR)
                         folders[os.path.join(dn, name)] = folder_id
                 dirs[:] = keep
-        utils.print_string("All uploads ok!", utils.PrintStyle.SUCCESS)
+        utils.print_string("All uploads ok", utils.PrintStyle.SUCCESS)
 
-    def delete(self, gname):
+    def delete(self, gd_path):
         """
         Delete Google Drive file or directory
         """
-        # Search for Google Drive content with the name gname
-        try:
-            logging.info("Searching for '{}'".format(gname))
-            files = []
-            page_token = None
-            while True:
-                response = self.client.files().list(q="name = '" + gname + "' and trashed = false",
-                                                    spaces='drive',
-                                                    fields='nextPageToken, '
-                                                           'files(id, name)',
-                                                    pageToken=page_token).execute()
-
-                files.extend(response.get('files', []))
-                page_token = response.get('nextPageToken', None)
-                if page_token is None:
-                    break
-        except HttpError as e:
-            utils.print_string("Error while searching for '{}' : {}".format(
-                gname, e), utils.PrintStyle.ERROR)
-            return None
+        # Get id of Google Drive item that will be deleted
+        id, is_folder = self.traverse(gd_path)
 
         # Delete specified content
         try:
-            logging.info("Result: {}".format(files))
-            for item in files:
-                gpath = self.get_path(item.get('id'))
-                if utils.yesno("Delete '{}'".format(gpath), True):
-                    self.client.files().delete(fileId=item.get('id')).execute()
-                    utils.print_string("Successfully deleted '{}'".format(
-                        gpath), utils.PrintStyle.SUCCESS)
-                    break
-            else:
-                utils.print_string("Could not find '{}' on Google Drive".format(
-                    gname), utils.PrintStyle.ERROR)
+                self.client.files().delete(fileId=id).execute()
+                utils.print_string("Successfully deleted '{}'".format(
+                    gd_path), utils.PrintStyle.SUCCESS)
         except HttpError as e:
             utils.print_string("Could not delete '{}': {}".format(
-                gpath, e), utils.PrintStyle.ERROR)
+                gd_path, e), utils.PrintStyle.ERROR)
 
 
 # If modifying these scopes, delete the file token.json
@@ -491,3 +441,8 @@ def authenticate_OAuth2():
     # Create and return client
     client = build('drive', 'v3', credentials=creds)
     return client
+
+if __name__ == '__main__':
+    logging.basicConfig(level = logging.INFO)
+    gd = Gdrive()
+    gd.delete('f/')

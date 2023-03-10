@@ -1,16 +1,16 @@
 import logging
 import os
 import sys
-
 import boto3
 import botocore.exceptions
-import utils
+from services.data_service import DataService
 
 # hack to allow importing modules from parent directory
 sys.path.insert(0, os.path.abspath('..'))
+import utils
 
 
-class S3:
+class S3(DataService):
     def __init__(self):
         # Using temporary credentials
         # self.client = temporary_authentication()
@@ -90,13 +90,18 @@ class S3:
             return True
 
         except botocore.exceptions.ClientError as e:
-            utils.print_string("Could not download '{}': {}".format(
-                object['Key'], e), utils.PrintStyle.ERROR)
+            if folder_name is None:
+                utils.print_string("Error while downloading bucket '{}': {}".format(
+                    bucket_name, e), utils.PrintStyle.ERROR)
+            else:
+                    utils.print_string("Error while downloading folder '{}': {}".format(
+                    folder_name, e), utils.PrintStyle.ERROR)
             return False
 
-    def download(self, localdir, bucket_name, object_name):
+    def download(self, localdir, s3_path):
         """
         Download S3 content
+
         If object_name is empty, download the entire bucket
         """
         localdir = os.path.expanduser(localdir)
@@ -106,10 +111,23 @@ class S3:
             utils.print_string("'{}' is not a directory in your filesystem".format(
                 localdir), utils.PrintStyle.ERROR)
             return None
+        
+        s3_path = s3_path.lstrip('/')
+        first, delim, last = s3_path.partition('/')
+
+        # Only bucket was specified
+        if first == '':
+            bucket_name = last
+            object_name = ''
+        else:
+            bucket_name = first
+            object_name = last
+
+        logging.info("Bucket name: " + bucket_name)
+        logging.info("Object name: " + object_name)
 
         success = False
 
-        # Download specific object or directory
         if object_name != "":
 
             # Download object
@@ -121,8 +139,8 @@ class S3:
                     self.client.download_file(bucket_name, object_name, path)
                     success = True
                 except botocore.exceptions.ClientError as e:
-                    utils.print_string("Could not download object '{}': {}".format(
-                        object_name, e), utils.PrintStyle.ERROR)
+                    utils.print_string("Could not download object '{}' from bucket '{}': {}".format(
+                        object_name,bucket_name, e), utils.PrintStyle.ERROR)
                     return None
 
             # Download directory
@@ -135,9 +153,9 @@ class S3:
             success = self.download_directory(localdir, bucket_name)
 
         if success:
-            utils.print_string("All downloads successfull!")
+            utils.print_string("All downloads successfull",utils.PrintStyle.SUCCESS)
 
-    def upload(self, localdir, bucket_name):
+    def upload(self, localdir, s3_path):
         """
         Upload file or folder to S3
         """
@@ -149,6 +167,21 @@ class S3:
                 localdir), utils.PrintStyle.ERROR)
             return None
 
+        s3_path = s3_path.lstrip('/')
+        first, delim, last = s3_path.partition('/')
+
+        # Only bucket was specified
+        if first == '':
+            bucket_name = last
+            object_name = ''
+        else:
+            bucket_name = first
+            if not last == '' and not last.endswith('/'):
+                utils.print_string("Error: '{}' is not a directory".format(last),utils.PrintStyle.ERROR)
+                return
+            object_name = last
+
+
         # Check if bucket exists
         try:
             logging.info("Checking if bucket '{}' exists".format(bucket_name))
@@ -157,16 +190,10 @@ class S3:
             if e.response['ResponseMetadata']['HTTPStatusCode'] == 404:
                 utils.print_string("Warning: bucket '{}' doesn't exist".format(
                     bucket_name), utils.PrintStyle.WARNING)
-                if utils.yesno("Do you want to create bucket '{}' and continue with the upload".format(bucket_name),
-                               True):
-                    if not self.create_bucket(bucket_name):
-                        return None
-                else:
-                    return None
             else:
                 utils.print_string("Error while checking if bucket '{}' exists: {}".format(
                     bucket_name, e), utils.PrintStyle.ERROR)
-                return None
+            return None
 
         logging.info("S3 bucket: {}".format(bucket_name))
         logging.info("Local directory: {}".format(localdir))
@@ -177,7 +204,7 @@ class S3:
             file_name = localdir.split('/')[-1]
             try:
                 logging.info('Uploading ' + localdir)
-                self.client.upload_file(localdir, bucket_name, file_name)
+                self.client.upload_file(localdir, bucket_name, object_name + file_name)
             except botocore.exceptions.ClientError as e:
                 utils.print_string("Could not upload file '{}': {}".format(
                     localdir, e), utils.PrintStyle.ERROR)
@@ -203,9 +230,12 @@ class S3:
                         logging.info('Skipping generated file: ' + name)
                     else:
                         try:
-                            # Create object key in such a way that S3
+                            # Define object key in such a way that S3
                             # will automatically create required folders
-                            key = os.path.join(subfolder, name)
+                            if not object_name == '':
+                                key = os.path.join(object_name,subfolder, name)
+                            else:
+                                 key = os.path.join(subfolder, name)
                             logging.info('Uploading ' + fullname)
                             self.client.upload_file(fullname, bucket_name, key)
                         except botocore.exceptions.ClientError as e:
@@ -256,11 +286,26 @@ class S3:
             bucket_name), utils.PrintStyle.SUCCESS)
         return True
 
-    def delete(self, bucket_name, object_name):
+    def delete(self, s3_path):
         """
         Delete S3 object
+
         If an object is not specified, delete the bucket itself
         """
+
+        s3_path = s3_path.lstrip('/')
+        first, delim, last = s3_path.partition('/')
+
+        # Only bucket was specified
+        if first == '':
+            bucket_name = last
+            object_name = ''
+        else:
+            bucket_name = first
+            object_name = last
+        
+        logging.info("S3 path: {}".format(bucket_name))
+
 
         # Delete object
         if object_name != '':
@@ -298,6 +343,7 @@ class S3:
 def temporary_authentication():
     """
     Interacts with AWS STS API to extract temporary credentials
+
     These are then used to authenticate the IAM user whose credentials 
     are initially extracted by Boto3 (from config file or elsewhere)
     """
@@ -319,3 +365,4 @@ def temporary_authentication():
                           aws_session_token=credentials['SessionToken'])
 
     return client
+    

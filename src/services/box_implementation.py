@@ -5,18 +5,17 @@ import sys
 import webbrowser
 from threading import Thread, Event
 from wsgiref.simple_server import WSGIServer, WSGIRequestHandler, make_server
-
 import bottle
 import boxsdk
-import utils
+from services.data_service import DataService
 
 # hack to allow importing modules from parent directory
 sys.path.insert(0, os.path.abspath('..'))
+import utils
 
 MB = 1024 * 1024
 
-
-class Box:
+class Box(DataService):
     def __init__(self):
         # Using OAuth2
         # self.client = authenticate_OAuth2()
@@ -24,7 +23,7 @@ class Box:
         # Using developer token
         auth = boxsdk.OAuth2(client_id='u5jubneda8hf7va31wdhgjv0l4poqykj',
                              client_secret='vKAy2N7rsHO99e00OOGB54AMDMKoiA0p',
-                             access_token='2xmyPiB4UZ53LJ9zsALXUYxosBfoZaIO')
+                             access_token='ogZ8ohTGmk8QqZ5G0VU3nynRzwyUmsvj')
         self.client = boxsdk.Client(auth)
 
     def get_path(self, id, is_folder=False):
@@ -48,13 +47,57 @@ class Box:
         If key exists inside parent_folder on Box, return its id, otherwise return None
         """
         for item in parent_folder.get_items():
-            item_info = item.get()
-            if item_info.name == key and item_info.type == key_type:
-                return item_info.id
-
+            if item.name == key:
+                if item.type == key_type:
+                    return item.id
+                
+                # Item with same name but different type exists
+                else:
+                    return -1
         return None
+    
+    def traverse(self,bx_path):
+        """
+        Traverse Box directory structure based on given path,
 
-    def download(self, localdir, bxname):
+        Return the id and type of the item at the end of the path
+        """
+        if bx_path.endswith('/'):
+            key_type = 'folder'
+        else:
+            key_type = 'file'
+
+        bx_path = bx_path.strip('/')
+        bx_path = bx_path.removeprefix('All Files')
+        bx_path = bx_path.lstrip('/')
+
+        # Root foler requested
+        if bx_path == "":
+            return '0','folder'
+
+        logging.info("Traversing '{}'".format(bx_path))
+
+        current_folder = self.client.root_folder().get()
+        names = bx_path.split('/')
+        for item in names:
+            # Reached final item, return its id if it exists on Box
+            if item == names[-1]:
+                logging.info("At final item")
+                id = self.exists(current_folder, item, key_type)
+                if id is not None and id != -1:
+                    return id, key_type
+                else:
+                    utils.print_string("Invalid path: {} '{}' doesn't exist".format(key_type,item),utils.PrintStyle.ERROR)
+                    sys.exit()
+            else:   
+                id = self.exists(current_folder, item,'folder')
+                if id is not None and id != -1:
+                    current_folder = self.client.folder(id)
+                else:
+                    utils.print_string("Invalid path: Folder '{}' doesn't exist".format(item),utils.PrintStyle.ERROR)
+                    sys.exit()
+
+    def download(self, localdir, bx_path):
         """
         Download a file or folder from Box
         """
@@ -64,48 +107,43 @@ class Box:
             utils.print_string(
                 "'{}' is not a directory in your filesystem".format(localdir), utils.PrintStyle.ERROR)
             return None
-
+        
         item_info = None
-        bxpath = None
 
-        # Search for Box content named bxname
-        search_results = self.client.search().query(query=bxname)
-        for item in search_results:
-            item_info = item.get()
-            is_folder = (item_info.type == 'folder')
-            bxpath = self.get_path(item_info.id, is_folder)
-            if utils.yesno('Download %s ' % bxpath, True):
-                break
-        else:
-            utils.print_string('Cannot find Box content with name {}'.format(
-                bxname), utils.PrintStyle.ERROR)
-            return None
+        # Get item that will be downloaded
+        id, key_type = self.traverse(bx_path)
+        if key_type == 'folder':
+            item_info = self.client.folder(id).get()
+        elif key_type == 'file':
+            item_info = self.client.file(id).get()
 
-        logging.info('Box directory:' + bxpath)
+        logging.info('Box directory:' + bx_path)
         logging.info('Local directory:' + localdir)
 
         try:
             # Download file
             if not item_info.type == 'folder':
-                logging.info('Downloading file ' + bxpath)
+                logging.info('Downloading file ' + bx_path)
                 dl_path = os.path.join(localdir, item_info.name)
                 with open(dl_path, 'wb') as f:
                     self.client.file(item_info.id).download_to(f)
 
             # Download zipped folder
             else:
-                logging.info('Downloading folder ' + bxpath)
+                logging.info('Downloading folder ' + bx_path)
                 dl_path = os.path.join(localdir, item_info.name) + '.zip'
                 with open(dl_path, 'wb') as f:
                     folder = [self.client.folder(item_info.id)]
                     self.client.download_zip(item_info.name, folder, f)
+
         except boxsdk.BoxAPIException as e:
             utils.print_string("Could not download '{}': {}".format(
-                bxpath, e), utils.PrintStyle.ERROR)
+                bx_path, e), utils.PrintStyle.ERROR)
             return None
 
         utils.print_string("Successfully downloaded '{}'".format(
             item_info.name), utils.PrintStyle.SUCCESS)
+    
 
     def upload_file(self, localdir, folder_id, file_id):
         """
@@ -146,7 +184,6 @@ class Box:
                         sha1.update(chunk)
 
                     content_sha1 = sha1.digest()
-                    logging.info("Chunk size used: {} MB".format((uploader.part_size) / (1024 * 1024)))
                     logging.info("Session id: {}".format(session_id))
 
                     uploader.commit(content_sha1=content_sha1, parts=parts)
@@ -174,7 +211,7 @@ class Box:
                     utils.print_string("Could not upload '{}': {}".format(localdir, e), utils.PrintStyle.ERROR)
                     sys.exit()
 
-    def upload(self, localdir, bxname):
+    def upload(self, localdir, bx_path):
         """
         Upload a file or folder to Box
         """
@@ -187,28 +224,17 @@ class Box:
             return None
 
         folder_info = None
-        bxpath = None
 
-        # Search for non-root Box folder with the given name
-        if bxname != '':
-            search_results = self.client.search().query(query=bxname, result_type='folder')
-            for item in search_results:
-                folder_info = item.get()
-                bxpath = self.get_path(folder_info.id, True)
-                if utils.yesno('Upload to %s ' % bxpath, True):
-                    break
-            else:
-                utils.print_string('Cannot find Box folder with name: {}'.format(
-                    bxname), utils.PrintStyle.ERROR)
-                return None
+        if not bx_path.endswith('/'):
+            utils.print_string("Error: '{}' doesn't point to a Box directory".format(bx_path),utils.PrintStyle.ERROR)
+            return None
 
-        # Otherwise get root Box folder
-        else:
-            bxpath = '/All Files'
-            folder_info = self.client.root_folder().get()
+        # Get Box directory to upload to
+        id, key_type = self.traverse(bx_path)
+        folder_info = self.client.folder(id).get()
 
+        logging.info("Box directory: " + bx_path)
         logging.info("Local directory: " + localdir)
-        logging.info("Box directory: " + bxpath)
 
         # Upload file
         if os.path.isfile(localdir):
@@ -217,8 +243,12 @@ class Box:
             folder_id = folder_info.id
             key = localdir.split('/')[-1]
             id = self.exists(self.client.folder(folder_id), key, 'file')
-            self.upload_file(localdir, folder_id.get().id, id)
-
+            if id != -1:
+                self.upload_file(localdir, folder_id, id)
+            else:
+                utils.print_string("Cannot upload '{}', name already in use by another item of different type".format(key),utils.PrintStyle.ERROR)
+                return None
+                
         # Upload folder content
         elif os.path.isdir(localdir):
             logging.info(localdir + ' is a local folder')
@@ -272,33 +302,26 @@ class Box:
 
         utils.print_string("All uploads successfull", utils.PrintStyle.SUCCESS)
 
-    def delete(self, bxname):
+    def delete(self, bx_path):
         """
         Delete a file or folder from Box
         """
         item = None
-        item_info = None
-        bxpath = ''
 
-        # Search for Box content with the name bxname
-        search_results = self.client.search().query(query=bxname)
-        for item in search_results:
-            item_info = item.get()
-            is_folder = (item_info.type == 'folder')
-            bxpath = self.get_path(item_info.id, is_folder)
-            if utils.yesno('Delete %s ' % bxpath, True):
-                break
-        else:
-            utils.print_string('Cannot find Box content with name: {}'.format(
-                bxname), utils.PrintStyle.ERROR)
-            return None
+        # Get Box item that will be deleted
+        id, key_type = self.traverse(bx_path)
+        if key_type == 'folder':
+            item = self.client.folder(id)
+        elif key_type == 'file':
+            item = self.client.file(id)
 
+        # Delete item
         if item.delete():
-            utils.print_string("Sucesfully deleted '{}'".format(
-                bxpath), utils.PrintStyle.SUCCESS)
+            utils.print_string("Successfully deleted '{}'".format(
+                bx_path), utils.PrintStyle.SUCCESS)
         else:
             utils.print_string("Could not delete '{}'".format(
-                bxpath), utils.PrintStyle.ERROR)
+                bx_path), utils.PrintStyle.ERROR)
 
 
 def authenticate_OAuth2():
@@ -358,3 +381,8 @@ def authenticate_OAuth2():
     logging.info('refresh_token: ' + refresh_token)
 
     return boxsdk.Client(oauth)
+
+if __name__ == '__main__':
+    logging.basicConfig(level = logging.INFO)
+    bx = Box()
+    bx.upload("/Users/teomeras/Desktop/foldertest","All Files/")

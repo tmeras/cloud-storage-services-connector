@@ -3,15 +3,13 @@ import logging
 import os
 import sys
 import time
-import requests
 import dropbox
 import requests
 import utils
-from data_service import DataService
+from .data_service import DataService
 
 # hack to allow importing modules from parent directory
 sys.path.insert(0, os.path.abspath('..'))
-
 
 
 ACCESS_TOKEN = "sl.BaO2FgyVXm3qvApX1boMYbCl1G94_pNlntMatDSMQfF3kWLqSro2d0K48kwM6r_gfF7S_P8LBiIa50Yhel3RwpWVUZPrqLkSB__-k1TOAfyAdacRrcZDwkSnwywPe3mfEeMoFe8"
@@ -19,18 +17,10 @@ ACCESS_TOKEN = "sl.BaO2FgyVXm3qvApX1boMYbCl1G94_pNlntMatDSMQfF3kWLqSro2d0K48kwM6
 # Upload chunk size
 CHUNK_SIZE = 8 * 1024 * 1024
 
+
 class Dropbox(DataService):
     def __init__(self):
         self.client = dropbox.Dropbox(ACCESS_TOKEN)
-
-    def close_dbx(self):
-        """
-        Close Dropbox handler, cleaning up resources.
-        """
-        if isinstance(self.client, dropbox.Dropbox):
-            self.client.close()
-        else:
-            logging.warning("Error when cleaning up Dropbox resources.")
 
     def download(self, local_path, dbx_path):
         """
@@ -90,8 +80,7 @@ class Dropbox(DataService):
                     return None
             utils.print_string("Folder named {} downloaded successfully!".format(
                 dbx_path.split('/')[-1]), utils.PrintStyle.SUCCESS)
-        
-    
+
     def upload_file(self, fullname, dbx_path, subfolder, name):
         """
         Upload a file
@@ -101,7 +90,7 @@ class Dropbox(DataService):
         while '//' in path:
             path = path.replace('//', '/')
 
-        mode = (dropbox.files.WriteMode.overwrite)
+        mode = dropbox.files.WriteMode.overwrite
         mtime = os.path.getmtime(fullname)
 
         with open(fullname, 'rb') as f:
@@ -213,8 +202,7 @@ class Dropbox(DataService):
                         keep.append(name)
                 dirs[:] = keep
 
-        utils.print_string('All uploads successfull',
-                           utils.PrintStyle.SUCCESS)
+        utils.print_string('All uploads successfull', utils.PrintStyle.SUCCESS)
 
     def delete(self, dbx_path):
         dbx_path = '/' + dbx_path.lstrip('/')
@@ -229,8 +217,17 @@ class Dropbox(DataService):
         utils.print_string("Successfully deleted {}".format(
             md.name), utils.PrintStyle.SUCCESS)
 
+    def close(self):
+        """
+        Close Dropbox handler, cleaning up resources.
+        """
+        if isinstance(self.client, dropbox.Dropbox):
+            self.client.close()
+        else:
+            logging.warning("Error when cleaning up Dropbox resources.")
 
-def no_redirect_OAuth2():
+
+def no_redirect_oauth2():
     """
     Goes through a basic oauth flow using the existing long-lived token type
     """
@@ -252,9 +249,9 @@ def no_redirect_OAuth2():
 
     with dropbox.Dropbox(oauth2_access_token=oauth_result.access_token) as client:
         client.users_get_current_account()
-        utils.print_string("Authentication succesfull!",
-                           utils.PrintStyle.SUCCESS)
+        utils.print_string("Authentication successful!", utils.PrintStyle.SUCCESS)
         return client  # Return the Dropbox object to later use it for requests to Dropbox API
-    
-if __name__=='__main__':
+
+
+if __name__ == "__main__":
     dbx = DataService.build(dropbox)

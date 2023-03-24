@@ -8,6 +8,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from googleapiclient.discovery import Resource
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 
@@ -108,7 +109,6 @@ class Gdrive(DataService):
                 else:
                     utils.print_string("Invalid path: Folder '{}' doesn't exist".format(item),utils.PrintStyle.ERROR)
                     sys.exit()
-
 
     def download_file(self, localdir, file_id, old_downloader=None):
         """
@@ -399,12 +399,23 @@ class Gdrive(DataService):
 
         # Delete specified content
         try:
-                self.client.files().delete(fileId=id).execute()
-                utils.print_string("Successfully deleted '{}'".format(
-                    gd_path), utils.PrintStyle.SUCCESS)
+            self.client.files().delete(fileId=id).execute()
+            utils.print_string("Successfully deleted '{}'".format(
+                gd_path), utils.PrintStyle.SUCCESS)
         except HttpError as e:
             utils.print_string("Could not delete '{}': {}".format(
                 gd_path, e), utils.PrintStyle.ERROR)
+    
+    def close(self):
+        """
+        Close Google Drive handler, cleaning up resources.
+        """
+        logging.info ("in close")
+        if isinstance(self.client, Resource):
+            logging.info("Cleaning up Drive resources")
+            self.client.close()
+        else:
+            logging.warning("Error when cleaning up Drive resources.")
 
 
 # If modifying these scopes, delete the file token.json
@@ -419,19 +430,20 @@ def authenticate_OAuth2():
 
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first time
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    if os.path.exists('../data/drive_token.json'):
+        creds = Credentials.from_authorized_user_file('../data/drive_token.json', SCOPES)
 
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
+
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
+                '../data/drive_credentials.json', SCOPES)
             creds = flow.run_local_server()
         # Save the credentials for the next run
-        with open('token.json', 'w') as token:
+        with open('../data/drive_token.json', 'w') as token:
             token.write(creds.to_json())
 
     logging.info("Client ID: " + creds.client_id)
@@ -441,8 +453,3 @@ def authenticate_OAuth2():
     # Create and return client
     client = build('drive', 'v3', credentials=creds)
     return client
-
-if __name__ == '__main__':
-    logging.basicConfig(level = logging.INFO)
-    gd = Gdrive()
-    gd.delete('f/')

@@ -3,6 +3,7 @@ import os
 import sys
 import boto3
 import botocore.exceptions
+import botocore.client
 from services.data_service import DataService
 
 # hack to allow importing modules from parent directory
@@ -12,11 +13,8 @@ import utils
 
 class S3(DataService):
     def __init__(self):
-        # Using temporary credentials
-        # self.client = temporary_authentication()
+        self.client = authenticate()
 
-        # Using long-term credentials from my .aws/credentials file
-        self.client = boto3.client('s3')
 
     def create_bucket(self, bucket_name, region=None):
         """
@@ -339,30 +337,27 @@ class S3(DataService):
 
         utils.print_string("Deletion successfull!", utils.PrintStyle.SUCCESS)
 
+    def close(self):
+        """
+        Close S3 handler, cleaning up resources.
+        """
+        if isinstance(self.client, botocore.client.BaseClient):
+            logging.info("Cleaning up S3 resources")
+            self.client.close()
+        else:
+            logging.warning("Error when cleaning up S3 resources.")
 
-def temporary_authentication():
+
+def authenticate():
     """
-    Interacts with AWS STS API to extract temporary credentials
+    Authenticates using AWS IAM Identity Center
 
-    These are then used to authenticate the IAM user whose credentials 
-    are initially extracted by Boto3 (from config file or elsewhere)
+    Setup as described in: https://docs.aws.amazon.com/cli/latest/userguide/sso-configure-profile-token.html
+    needs to first be completed
     """
-    sts_client = boto3.client('sts')
+    # If using a different profile from ~/.aws/config, specify it here
+    session = boto3.Session(profile_name='default')
 
-    assumed_role_object = sts_client.assume_role(
-        RoleArn="arn:aws:iam::825156787427:role/role_for_the_senior",
-        RoleSessionName="AssumeRoleSession1"
-    )
-
-    # From the response that contains the assumed role, get the temporary
-    # credentials that can be used to make subsequent API calls
-    credentials = assumed_role_object['Credentials']
-
-    # Use the temporary credentials that AssumeRole returns to make a
-    # connection to Amazon S3
-    client = boto3.client('s3', aws_access_key_id=credentials['AccessKeyId'],
-                          aws_secret_access_key=credentials['SecretAccessKey'],
-                          aws_session_token=credentials['SessionToken'])
-
+    client = session.client('s3')
     return client
     

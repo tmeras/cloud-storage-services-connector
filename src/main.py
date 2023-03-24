@@ -2,6 +2,7 @@ import argparse
 import logging
 import sys
 import utils
+import json
 import services.data_service as ds
 
 
@@ -57,7 +58,7 @@ def parse_arguments():
     # Create subcommand for Box
     box_parser = subparsers.add_parser("box", help="use Box services")
     box_subparser = box_parser.add_subparsers(
-        title="Box actions", required=True, dest="box_action")
+        title="Box actions", required=True, dest="action")
 
     # Create subcommand for downloading from Box
     box_dlparser = box_subparser.add_parser(
@@ -94,7 +95,7 @@ def parse_arguments():
     # Create subcommand for Google Drive
     gdrive_parser = subparsers.add_parser(
         "gdrive", help="use Google Drive services")
-    gdrive_subparser = gdrive_parser.add_subparsers(title="Google Drive actions", required=True, dest="gdrive_action")
+    gdrive_subparser = gdrive_parser.add_subparsers(title="Google Drive actions", required=True, dest="action")
 
     # Create subcommand for downloading from Drive
     gdrive_dlparser = gdrive_subparser.add_parser("download", help="download Drive content")
@@ -117,7 +118,7 @@ def parse_arguments():
     # Create subcommand for Amazon S3
     s3_parser = subparsers.add_parser("s3", help="use Amazon S3 services")
     s3_subparser = s3_parser.add_subparsers(
-        title="S3 actions", required=True, dest="s3_action")
+        title="S3 actions", required=True, dest="action")
 
     # Create subcommand for downloading from S3
     s3_dlparser = s3_subparser.add_parser(
@@ -176,4 +177,4 @@ if __name__ == "__main__":
         sys.exit(0)
 
     service.execute_action(args)
-    service.close()
+    service.close() 

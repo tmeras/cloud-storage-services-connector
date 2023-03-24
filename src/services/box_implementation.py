@@ -2,6 +2,7 @@ import hashlib
 import logging
 import os
 import sys
+import json
 import webbrowser
 from threading import Thread, Event
 from wsgiref.simple_server import WSGIServer, WSGIRequestHandler, make_server
@@ -17,14 +18,7 @@ MB = 1024 * 1024
 
 class Box(DataService):
     def __init__(self):
-        # Using OAuth2
-        # self.client = authenticate_OAuth2()
-
-        # Using developer token
-        auth = boxsdk.OAuth2(client_id='u5jubneda8hf7va31wdhgjv0l4poqykj',
-                             client_secret='vKAy2N7rsHO99e00OOGB54AMDMKoiA0p',
-                             access_token='ogZ8ohTGmk8QqZ5G0VU3nynRzwyUmsvj')
-        self.client = boxsdk.Client(auth)
+        self.client = authenticate()
 
     def get_path(self, id, is_folder=False):
         """
@@ -323,13 +317,32 @@ class Box(DataService):
             utils.print_string("Could not delete '{}'".format(
                 bx_path), utils.PrintStyle.ERROR)
 
+    def close(self):
+        None
+
+def store_tokens(access_token,refresh_token):
+    """
+    Store access and refresh token
+    """
+    # Update credentials file with tokens
+    tokens = {
+        "access_token": access_token,
+        "refresh_token": refresh_token
+    }
+    with open('../data/box_credentials.json') as file:
+        data = json.load(file)
+    data.update(tokens)
+    with open('../data/box_credentials.json', 'w') as file:
+        json.dump(data,file)
+
 
 def authenticate_OAuth2():
     """
     Authenticate using traditional 3-legged OAuth2
     """
-    CLIENT_ID = 'u5jubneda8hf7va31wdhgjv0l4poqykj'
-    CLIENT_SECRET = 'vKAy2N7rsHO99e00OOGB54AMDMKoiA0p'
+    # Read credentials file
+    with open("../data/box_credentials.json") as f:
+        data = json.load(f)
 
     class StoppableWSGIServer(bottle.ServerAdapter):
         def __init__(self, *args, **kwargs):
@@ -363,8 +376,9 @@ def authenticate_OAuth2():
     server_thread.start()
 
     oauth = boxsdk.OAuth2(
-        client_id=CLIENT_ID,
-        client_secret=CLIENT_SECRET,
+        client_id=data.get("app_key"),
+        client_secret=data.get("app_secret"),
+        store_tokens=store_tokens
     )
     auth_url, csrf_token = oauth.get_authorization_url('http://localhost:8080')
 
@@ -382,7 +396,35 @@ def authenticate_OAuth2():
 
     return boxsdk.Client(oauth)
 
-if __name__ == '__main__':
-    logging.basicConfig(level = logging.INFO)
-    bx = Box()
-    bx.upload("/Users/teomeras/Desktop/foldertest","All Files/")
+def authenticate():
+    """
+    Authenticate user using access and refresh token.
+
+    If there are no (valid) tokens available, initiate new OAuth flow
+    """
+    # Read credentials file
+    with open("../data/box_credentials.json") as f:
+        data = json.load(f)
+    
+        
+    if "access_token" in data and "refresh_token" in data:
+        try:
+            oauth = boxsdk.OAuth2(
+                client_id=data.get("app_key"),
+                client_secret=data.get("app_secret"),
+                access_token=data.get("access_token"),
+                refresh_token=data.get("refresh_token"),
+            )
+            client = boxsdk.Client(oauth)
+            client.user().get()
+        except boxsdk.BoxOAuthException as e:
+            utils.print_string("Could authenticate with access/refresh token: {}".format(e),utils.PrintStyle.WARNING)
+            client = authenticate_OAuth2()
+        except Exception as e:
+            utils.print_string("Unexpected error during authentication: {}".format(e),utils.PrintStyle.ERROR)
+            sys.exit()
+    else:
+        logging.info("Tokens not found, initating OAuth flow")
+        client = authenticate_OAuth2()
+
+    return client

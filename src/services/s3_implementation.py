@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 import boto3
+from boto3.s3.transfer import TransferConfig
 import botocore.exceptions
 import botocore.client
 from services.data_service import DataService
@@ -10,11 +11,14 @@ from services.data_service import DataService
 sys.path.insert(0, os.path.abspath('..'))
 import utils
 
+MB = 1024 * 1024
+CHUNK_SIZE = 4 * MB
+THRESHOLD = 30 * MB
+SEPARATOR = os.path.sep
 
 class S3(DataService):
     def __init__(self):
         self.client = authenticate()
-
 
     def create_bucket(self, bucket_name, region=None):
         """
@@ -41,6 +45,7 @@ class S3(DataService):
     def download_directory(self, localdir, bucket_name, folder_name=None):
         """
         Download a directory from S3
+
         If no directory is specified, download the bucket itself
         """
         try:
@@ -57,15 +62,15 @@ class S3(DataService):
 
             for object in result['Contents']:
                 if folder_name is None:
-                    substring = object['Key']
+                    substring = object['Key'].replace('/',SEPARATOR)
                 else:
-                    substring = object['Key'].split(folder_name, 1)[1]
+                    substring = object['Key'].split(folder_name, 1)[1].replace('/',SEPARATOR)
 
                 # Object is a file, download it
                 if not object['Key'].endswith('/'):
 
                     # If folder that contains file doesn't exist locally, create it
-                    first, delim, last = substring.rpartition('/')
+                    first, delim, last = substring.rpartition(SEPARATOR)
                     if first and delim:
                         dir = os.path.join(localdir, first)
                         if not os.path.exists(dir):
@@ -103,13 +108,15 @@ class S3(DataService):
         If object_name is empty, download the entire bucket
         """
         localdir = os.path.expanduser(localdir)
-        localdir = localdir.rstrip(os.path.sep)
-        localdir = localdir.replace(os.path.sep, '/')
+        localdir = localdir.replace('/', SEPARATOR)
+        localdir = localdir.rstrip(SEPARATOR)
         if not os.path.isdir(localdir):
             utils.print_string("'{}' is not a directory in your filesystem".format(
                 localdir), utils.PrintStyle.ERROR)
             return None
         
+        # S3 identifies folders using forward slashes
+        s3_path = s3_path.replace(SEPARATOR,'/')
         s3_path = s3_path.lstrip('/')
         first, delim, last = s3_path.partition('/')
 
@@ -140,12 +147,10 @@ class S3(DataService):
                     utils.print_string("Could not download object '{}' from bucket '{}': {}".format(
                         object_name,bucket_name, e), utils.PrintStyle.ERROR)
                     return None
-
             # Download directory
             else:
                 success = self.download_directory(
                     localdir, bucket_name, object_name)
-
         # Download bucket
         else:
             success = self.download_directory(localdir, bucket_name)
@@ -158,13 +163,15 @@ class S3(DataService):
         Upload file or folder to S3
         """
         localdir = os.path.expanduser(localdir)
-        localdir = localdir.rstrip(os.path.sep)
-        localdir = localdir.replace(os.path.sep, '/')
+        localdir = localdir.replace('/', SEPARATOR)
+        localdir = localdir.rstrip(SEPARATOR)
         if not os.path.exists(localdir):
             utils.print_string("'{}' does not exist in your filesystem".format(
                 localdir), utils.PrintStyle.ERROR)
             return None
 
+        # S3 identifies folders using forward slashes       
+        s3_path = s3_path.replace(SEPARATOR,'/')
         s3_path = s3_path.lstrip('/')
         first, delim, last = s3_path.partition('/')
 
@@ -178,7 +185,6 @@ class S3(DataService):
                 utils.print_string("Error: '{}' is not a directory".format(last),utils.PrintStyle.ERROR)
                 return
             object_name = last
-
 
         # Check if bucket exists
         try:
@@ -196,13 +202,16 @@ class S3(DataService):
         logging.info("S3 bucket: {}".format(bucket_name))
         logging.info("Local directory: {}".format(localdir))
 
+        # Configuration for chunked uploads
+        config = TransferConfig(multipart_threshold=THRESHOLD,multipart_chunksize=CHUNK_SIZE)
+
         # Upload file
         if os.path.isfile(localdir):
             logging.info(localdir + ' is a local file')
-            file_name = localdir.split('/')[-1]
+            file_name = localdir.split(SEPARATOR)[-1]
             try:
                 logging.info('Uploading ' + localdir)
-                self.client.upload_file(localdir, bucket_name, object_name + file_name)
+                self.client.upload_file(localdir, bucket_name, object_name + file_name,Config=config)
             except botocore.exceptions.ClientError as e:
                 utils.print_string("Could not upload file '{}': {}".format(
                     localdir, e), utils.PrintStyle.ERROR)
@@ -234,8 +243,11 @@ class S3(DataService):
                                 key = os.path.join(object_name,subfolder, name)
                             else:
                                  key = os.path.join(subfolder, name)
+                            key = key.replace(SEPARATOR,'/')
                             logging.info('Uploading ' + fullname)
-                            self.client.upload_file(fullname, bucket_name, key)
+                            self.client.upload_file(fullname, bucket_name, key, Config=config)
+                            utils.print_string("File '{}' uploaded successfully".format(
+                                                    fullname), utils.PrintStyle.SUCCESS)
                         except botocore.exceptions.ClientError as e:
                             utils.print_string("Could not upload file '{}': {}".format(
                                 fullname, e), utils.PrintStyle.ERROR)
@@ -255,7 +267,7 @@ class S3(DataService):
                         keep.append(name)
                 dirs[:] = keep
 
-        utils.print_string("All uploads ok!", utils.PrintStyle.SUCCESS)
+        utils.print_string("All uploads successful", utils.PrintStyle.SUCCESS)
 
     def empty_bucket(self, bucket_name):
         """
@@ -263,23 +275,23 @@ class S3(DataService):
 
         Returns true if bucket is successfully emptied, otherwise returns false
         """
-        logging.info("Emptying bucket '{}'.".format(bucket_name))
+        utils.print_string("Emptying bucket '{}'.".format(bucket_name))
         try:
             result = self.client.list_objects_v2(Bucket=bucket_name)
             if result['KeyCount'] == 0:
-                utils.print_string("Bucket '{}' is already empty".format(
-                    bucket_name), utils.PrintStyle.SUCCESS)
+                logging.warning("Bucket '{}' is already empty".format(
+                    bucket_name))
                 return True
 
             for object in result['Contents']:
                 logging.info("Deleting object '{}'".format(object['Key']))
                 self.client.delete_object(
                     Bucket=bucket_name, Key=object['Key'])
+                utils.print_string("Object '{}' deleted successfully".format(object['Key']),utils.PrintStyle.SUCCESS)
         except botocore.exceptions.ClientError as e:
             utils.print_string("Could not empty bucket '{}': {}".format(
                 bucket_name, e), utils.PrintStyle.ERROR)
             return False
-
         utils.print_string("Bucket '{}' emptied successfully".format(
             bucket_name), utils.PrintStyle.SUCCESS)
         return True
@@ -290,7 +302,8 @@ class S3(DataService):
 
         If an object is not specified, delete the bucket itself
         """
-
+        # S3 identifies folders using forward slashes
+        s3_path = s3_path.replace(SEPARATOR,'/')
         s3_path = s3_path.lstrip('/')
         first, delim, last = s3_path.partition('/')
 
@@ -302,19 +315,42 @@ class S3(DataService):
             bucket_name = first
             object_name = last
         
-        logging.info("S3 path: {}".format(bucket_name))
+        logging.info("Object name: {}".format(object_name))
 
-
-        # Delete object
+        # Delete file or folder
         if object_name != '':
-            try:
-                logging.info("Deleting object '{}'".format(object_name))
-                self.client.delete_object(Bucket=bucket_name, Key=object_name)
-            except botocore.exceptions.ClientError as e:
-                utils.print_string("Could not delete object '{}': {}".format(
-                    object_name, e), utils.PrintStyle.ERROR)
-                return None
+            # Delete folder contents
+            if object_name.endswith('/'):
+                logging.info("Deleting folder '{}'".format(object_name))
+                result = self.client.list_objects_v2(
+                    Bucket=bucket_name, Prefix=object_name)
+                
+                if result['KeyCount'] == 0:
+                    utils.print_string("Error: Folder '{}' doesn't exist".format(
+                        object_name), utils.PrintStyle.ERROR)
+                    return None
+                
+                for object in result['Contents']:
+                    try:
+                        logging.info("Deleting object '{}'".format(object['Key']))
+                        self.client.delete_object(Bucket=bucket_name, Key=object['Key'])
+                        utils.print_string("Object '{}' successfully deleted".format(object['Key']),utils.PrintStyle.SUCCESS)
+                    except botocore.exceptions.ClientError as e:
+                        utils.print_string("Could not delete object '{}': {}".format(
+                            object['Key'], e), utils.PrintStyle.ERROR)
+                        return None
 
+            # Delete file
+            else:
+                try:
+                    # Ensure object exists
+                    self.client.head_object(Bucket=bucket_name, Key=object_name)
+                    logging.info("Deleting object '{}'".format(object_name))
+                    self.client.delete_object(Bucket=bucket_name, Key=object_name)
+                except botocore.exceptions.ClientError as e:
+                    utils.print_string("Could not delete object '{}': {}".format(
+                        object_name, e), utils.PrintStyle.ERROR)
+                    return None
         # Delete bucket
         else:
             try:
@@ -324,10 +360,7 @@ class S3(DataService):
                 if result['KeyCount'] != 0:
                     utils.print_string("Bucket '{}' needs to be emptied before deletion".format(
                         bucket_name), utils.PrintStyle.WARNING)
-                    if utils.yesno("Empty bucket and proceed with deletion?", True):
-                        self.empty_bucket(bucket_name)
-                    else:
-                        return None
+                    self.empty_bucket(bucket_name)
                 logging.info("Deleting bucket '{}'".format(bucket_name))
                 self.client.delete_bucket(Bucket=bucket_name)
             except botocore.exceptions.ClientError as e:
@@ -335,7 +368,7 @@ class S3(DataService):
                     bucket_name, e), utils.PrintStyle.ERROR)
                 return None
 
-        utils.print_string("Deletion successfull!", utils.PrintStyle.SUCCESS)
+        utils.print_string("All deletions successfull", utils.PrintStyle.SUCCESS)
 
     def close(self):
         """

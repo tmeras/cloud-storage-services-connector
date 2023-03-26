@@ -13,7 +13,10 @@ from .data_service import DataService
 # hack to allow importing modules from parent directory
 sys.path.insert(0, os.path.abspath('..'))
 
-CHUNK_SIZE = 8 * 1024 * 1024
+MB = 1024 * 1024
+CHUNK_SIZE = 4 * MB
+THRESHOLD = 30 * MB
+SEPARATOR = os.path.sep
 
 class Dropbox(DataService):
     def __init__(self):
@@ -24,8 +27,8 @@ class Dropbox(DataService):
         Download a file or folder from Dropbox
         """
         local_path = os.path.expanduser(local_path)
-        local_path = local_path.replace(os.path.sep, '/')
-        local_path = local_path.rstrip('/') + '/'
+        local_path = local_path.replace('/', SEPARATOR)
+        local_path = local_path.rstrip(SEPARATOR) + SEPARATOR
         if not os.path.exists(local_path):
             utils.print_string(
                 "{} does not exist in your filesystem".format(local_path), utils.PrintStyle.ERROR)
@@ -95,7 +98,7 @@ class Dropbox(DataService):
             with utils.stopwatch('upload of %d bytes' % file_size):
 
                 # Small file, upload in a single request
-                if file_size <= CHUNK_SIZE:
+                if file_size <= THRESHOLD:
                     try:
                         logging.info("Uploading '{}' in a single request ".format(fullname))
                         self.client.files_upload(
@@ -141,8 +144,8 @@ class Dropbox(DataService):
         dbx_path = dbx_path.rstrip('/')
 
         rootdir = os.path.expanduser(rootdir)
-        rootdir = rootdir.rstrip(os.path.sep)
-        rootdir = rootdir.replace(os.path.sep, '/')
+        rootdir = rootdir.replace('/', SEPARATOR)
+        rootdir = rootdir.rstrip(SEPARATOR)
         if not os.path.exists(rootdir):
             utils.print_string(
                 "'{}' does not exist in your filesystem".format(rootdir), utils.PrintStyle.ERROR)
@@ -154,7 +157,7 @@ class Dropbox(DataService):
         # Upload file
         if os.path.isfile(rootdir):
             logging.info(rootdir + ' is a local file')
-            file_name = rootdir.split('/')[-1]
+            file_name = rootdir.split(SEPARATOR)[-1]
             logging.info("Uploading file '{}' ".format(rootdir))
             self.upload_file(rootdir, dbx_path, "", file_name)
 
@@ -162,7 +165,7 @@ class Dropbox(DataService):
         elif os.path.isdir(rootdir):
             logging.info(rootdir + ' is a local directory')
             for dn, dirs, files in os.walk(rootdir):
-                subfolder = dn[len(rootdir):].strip(os.path.sep)
+                subfolder = dn[len(rootdir):].strip(SEPARATOR)
                 if subfolder != '':
                     logging.info("Descending into '{}' ...".format(subfolder))
 

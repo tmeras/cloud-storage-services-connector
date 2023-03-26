@@ -15,6 +15,9 @@ sys.path.insert(0, os.path.abspath('..'))
 import utils
 
 MB = 1024 * 1024
+THRESHOLD = 30 * MB
+SEPARATOR = os.path.sep
+
 
 class Box(DataService):
     def __init__(self):
@@ -31,8 +34,8 @@ class Box(DataService):
 
         path = ''
         for item in info.path_collection['entries']:
-            path += '/' + item.name
-        path += '/' + info.name
+            path += SEPARATOR + item.name
+        path += SEPARATOR + info.name
 
         return path
 
@@ -56,14 +59,15 @@ class Box(DataService):
 
         Return the id and type of the item at the end of the path
         """
-        if bx_path.endswith('/'):
+        bx_path = bx_path.replace('/',SEPARATOR)
+        if bx_path.endswith(SEPARATOR):
             key_type = 'folder'
         else:
             key_type = 'file'
 
-        bx_path = bx_path.strip('/')
+        bx_path = bx_path.strip(SEPARATOR)
         bx_path = bx_path.removeprefix('All Files')
-        bx_path = bx_path.lstrip('/')
+        bx_path = bx_path.lstrip(SEPARATOR)
 
         # Root foler requested
         if bx_path == "":
@@ -72,7 +76,7 @@ class Box(DataService):
         logging.info("Traversing '{}'".format(bx_path))
 
         current_folder = self.client.root_folder().get()
-        names = bx_path.split('/')
+        names = bx_path.split(SEPARATOR)
         for item in names:
             # Reached final item, return its id if it exists on Box
             if item == names[-1]:
@@ -96,7 +100,8 @@ class Box(DataService):
         Download a file or folder from Box
         """
         localdir = os.path.expanduser(localdir)
-        localdir = localdir.rstrip(os.path.sep)
+        localdir = localdir.replace('/', SEPARATOR)
+        localdir = localdir.rstrip(SEPARATOR)
         if not os.path.isdir(localdir):
             utils.print_string(
                 "'{}' is not a directory in your filesystem".format(localdir), utils.PrintStyle.ERROR)
@@ -145,14 +150,14 @@ class Box(DataService):
 
         If the file already exists, update it
 
-        Use chunked upload/update for files larger than 30 MB
+        Use chunked upload/update for large files
         """
         file_size = os.path.getsize(localdir)
 
         with open(localdir, 'rb') as f:
 
             # Large file, upload in chunks
-            if file_size > 30 * MB:
+            if file_size > THRESHOLD:
                 try:
                     sha1 = hashlib.sha1()
                     parts = []
@@ -161,7 +166,7 @@ class Box(DataService):
                     if file_id is None:
                         logging.info("Uploading '{}' in chunks".format(localdir))
                         uploader = self.client.folder(folder_id).create_upload_session(file_size=file_size,
-                                                                                       file_name=localdir.split('/')[
+                                                                                       file_name=localdir.split(SEPARATOR)[
                                                                                            -1])
                     else:
                         logging.info("Updating '{}' in chunks".format(localdir))
@@ -210,16 +215,16 @@ class Box(DataService):
         Upload a file or folder to Box
         """
         localdir = os.path.expanduser(localdir)
-        localdir = localdir.rstrip(os.path.sep)
-        localdir = localdir.replace(os.path.sep, '/')
+        localdir = localdir.replace('/', SEPARATOR)
+        localdir = localdir.rstrip(SEPARATOR)
         if not os.path.exists(localdir):
             utils.print_string("'{}' does not exist in your filesystem".format(
                 localdir), utils.PrintStyle.ERROR)
             return None
 
-        folder_info = None
-
-        if not bx_path.endswith('/'):
+        bx_path = bx_path.replace('/', SEPARATOR)
+        bx_path = bx_path.rstrip(SEPARATOR) + SEPARATOR
+        if not bx_path.endswith(SEPARATOR):
             utils.print_string("Error: '{}' doesn't point to a Box directory".format(bx_path),utils.PrintStyle.ERROR)
             return None
 
@@ -235,7 +240,7 @@ class Box(DataService):
             logging.info(localdir + ' is a local file')
 
             folder_id = folder_info.id
-            key = localdir.split('/')[-1]
+            key = localdir.split(SEPARATOR)[-1]
             id = self.exists(self.client.folder(folder_id), key, 'file')
             if id != -1:
                 self.upload_file(localdir, folder_id, id)

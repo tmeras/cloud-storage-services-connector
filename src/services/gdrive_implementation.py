@@ -71,14 +71,14 @@ class Gdrive(DataService):
         else:
             logging.info("Not found '{}'".format(key))
             return None
-    
-    def traverse(self,gd_path):
+
+    def traverse(self, gd_path):
         """
         Traverse Google Drive directory structure based on given path,
 
         Return the id and type of the item at the end of the path
         """
-        gd_path = gd_path.replace('/',SEPARATOR)
+        gd_path = gd_path.replace('/', SEPARATOR)
         if gd_path.endswith(SEPARATOR):
             is_folder = True
             key_type = 'folder'
@@ -92,7 +92,7 @@ class Gdrive(DataService):
 
         # Root folder requested
         if gd_path == "":
-            return 'root','folder'
+            return 'root', 'folder'
 
         logging.info("Traversing '{}'".format(gd_path))
 
@@ -106,14 +106,16 @@ class Gdrive(DataService):
                 if id is not None:
                     return id, is_folder
                 else:
-                    utils.print_string("Invalid path: {} '{}' doesn't exist".format(key_type,item),utils.PrintStyle.ERROR)
+                    utils.print_string("Invalid path: {} '{}' doesn't exist".format(
+                        key_type, item), utils.PrintStyle.ERROR)
                     sys.exit()
-            else:   
+            else:
                 id = self.exists(current_folder_id, item, True)
                 if id is not None:
                     current_folder_id = id
                 else:
-                    utils.print_string("Invalid path: Folder '{}' doesn't exist".format(item),utils.PrintStyle.ERROR)
+                    utils.print_string("Invalid path: Folder '{}' doesn't exist".format(
+                        item), utils.PrintStyle.ERROR)
                     sys.exit()
 
     def download_file(self, localdir, file_id, old_downloader=None):
@@ -219,12 +221,13 @@ class Gdrive(DataService):
                 else:
                     self.download_file(path, item.get('id'))
 
+    @utils.timeit
     def download(self, localdir, gd_path):
         """
         Download Google Drive file or directory
         """
         localdir = os.path.expanduser(localdir)
-        localdir = localdir.replace('/',SEPARATOR)
+        localdir = localdir.replace('/', SEPARATOR)
         localdir = localdir.rstrip(SEPARATOR)
         if not os.path.isdir(localdir):
             utils.print_string("'{}' is not a directory in your filesystem".format(
@@ -261,7 +264,8 @@ class Gdrive(DataService):
         """
         file_size = os.path.getsize(localdir)
         if file_size > THRESHOLD:
-            logging.info("Initiating resumable upload of '{}'".format(localdir))
+            logging.info(
+                "Initiating resumable upload of '{}'".format(localdir))
             resumable = True
         else:
             logging.info("Uploading '{}' in a single request".format(localdir))
@@ -270,7 +274,8 @@ class Gdrive(DataService):
         try:
             if old_request is None:
                 metadata = {'name': localdir.split(SEPARATOR)[-1]}
-                media = MediaFileUpload(localdir,  chunksize=CHUNK_SIZE, resumable=resumable)
+                media = MediaFileUpload(
+                    localdir,  chunksize=CHUNK_SIZE, resumable=resumable)
 
                 # Upload new file, otherwise update existing file
                 if file_id is None:
@@ -308,7 +313,7 @@ class Gdrive(DataService):
                 # Resume upload
                 if resumable:
                     self.upload_file(localdir, folder_id=folder_id,
-                                 file_id=file_id, old_request=request)
+                                     file_id=file_id, old_request=request)
                 else:
                     sys.exit()
             else:
@@ -316,12 +321,13 @@ class Gdrive(DataService):
                     localdir, e), utils.PrintStyle.ERROR)
                 sys.exit()
 
+    @utils.timeit   
     def upload(self, localdir, gd_path):
         """
         Upload file or directory to Google Drive
         """
         localdir = os.path.expanduser(localdir)
-        localdir = localdir.replace('/',SEPARATOR)
+        localdir = localdir.replace('/', SEPARATOR)
         localdir = localdir.rstrip(SEPARATOR)
         if not os.path.exists(localdir):
             utils.print_string("'{}' does not exist in your filesystem".format(
@@ -331,10 +337,9 @@ class Gdrive(DataService):
         gfolder = None
 
         # Get Google Drive directory to upload to
-        gd_path = gd_path.replace('/',SEPARATOR)
+        gd_path = gd_path.replace('/', SEPARATOR)
         id, is_folder = self.traverse(gd_path)
         gfolder = self.client.files().get(fileId=id).execute()
-
 
         logging.info("Local directory: " + localdir)
         logging.info("Google Drive path: " + gd_path)
@@ -413,6 +418,7 @@ class Gdrive(DataService):
                 dirs[:] = keep
         utils.print_string("All uploads successful", utils.PrintStyle.SUCCESS)
 
+    @utils.timeit
     def delete(self, gd_path):
         """
         Delete Google Drive file or directory
@@ -428,7 +434,7 @@ class Gdrive(DataService):
         except HttpError as e:
             utils.print_string("Could not delete '{}': {}".format(
                 gd_path, e), utils.PrintStyle.ERROR)
-    
+
     def close(self):
         """
         Close Google Drive handler, cleaning up resources.
@@ -453,7 +459,8 @@ def authenticate_OAuth2():
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first time
     if os.path.exists('../data/drive_token.json'):
-        creds = Credentials.from_authorized_user_file('../data/drive_token.json', SCOPES)
+        creds = Credentials.from_authorized_user_file(
+            '../data/drive_token.json', SCOPES)
 
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:

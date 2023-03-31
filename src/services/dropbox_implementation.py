@@ -18,10 +18,12 @@ CHUNK_SIZE = 4 * MB
 THRESHOLD = 30 * MB
 SEPARATOR = os.path.sep
 
+
 class Dropbox(DataService):
     def __init__(self):
         self.client = authenticate()
 
+    @utils.timeit
     def download(self, local_path, dbx_path):
         """
         Download a file or folder from Dropbox
@@ -34,8 +36,10 @@ class Dropbox(DataService):
                 "{} does not exist in your filesystem".format(local_path), utils.PrintStyle.ERROR)
             return None
 
+        dbx_path = dbx_path.replace('\\', '/')
         dbx_path = '/' + dbx_path.lstrip('/')
         dbx_path = dbx_path.rstrip('/')
+
         try:
             md = self.client.files_get_metadata(dbx_path)
         except dropbox.exceptions.ApiError as err:
@@ -51,14 +55,13 @@ class Dropbox(DataService):
 
             name = dbx_path.split('/')[-1]
             local_path += name
-            with utils.stopwatch('download'):
-                try:
-                    md = self.client.files_download_to_file(
-                        local_path, dbx_path)
-                except dropbox.exceptions.ApiError as err:
-                    utils.print_string(
-                        "Could not download file '{}': {}".format(dbx_path, err), utils.PrintStyle.ERROR)
-                    return None
+            try:
+                md = self.client.files_download_to_file(
+                    local_path, dbx_path)
+            except dropbox.exceptions.ApiError as err:
+                utils.print_string(
+                    "Could not download file '{}': {}".format(dbx_path, err), utils.PrintStyle.ERROR)
+                return None
             utils.print_string(
                 "File '{}' downloaded successfully!".format(dbx_path.split('/')[-1]), utils.PrintStyle.SUCCESS)
         else:
@@ -67,17 +70,16 @@ class Dropbox(DataService):
             if not name.endswith('.zip'):
                 name += ".zip"
             local_path += name
-            with utils.stopwatch('download'):
-                try:
-                    self.client.files_download_zip_to_file(
-                        local_path, dbx_path)
-                except dropbox.exceptions.ApiError as err:
-                    utils.print_string(
-                        "Could not download directory '{}': {}".format(
-                            dbx_path, err),
-                        utils.PrintStyle.ERROR
-                    )
-                    return None
+            try:
+                self.client.files_download_zip_to_file(
+                    local_path, dbx_path)
+            except dropbox.exceptions.ApiError as err:
+                utils.print_string(
+                    "Could not download directory '{}': {}".format(
+                        dbx_path, err),
+                    utils.PrintStyle.ERROR
+                )
+                return None
             utils.print_string("Folder named {} downloaded successfully!".format(
                 dbx_path.split('/')[-1]), utils.PrintStyle.SUCCESS)
 
@@ -95,35 +97,41 @@ class Dropbox(DataService):
 
         with open(fullname, 'rb') as f:
             file_size = os.path.getsize(fullname)
-            with utils.stopwatch('upload of %d bytes' % file_size):
 
-                # Small file, upload in a single request
-                if file_size <= THRESHOLD:
-                    try:
-                        logging.info("Uploading '{}' in a single request ".format(fullname))
-                        self.client.files_upload(
-                            f.read(), path, mode,
-                            client_modified=datetime.datetime(*time.gmtime(mtime)[:6]),
-                            mute=True)
-                    except dropbox.exceptions.ApiError as e:
-                        utils.print_string("Could not upload file '{}': {}".format(
-                            path, e), utils.PrintStyle.ERROR)
-                        sys.exit()
+            # Small file, upload in a single request
+            if file_size <= THRESHOLD:
+                try:
+                    logging.info(
+                        "Uploading '{}' in a single request ".format(fullname))
+                    self.client.files_upload(
+                        f.read(), path, mode,
+                        client_modified=datetime.datetime(
+                            *time.gmtime(mtime)[:6]),
+                        mute=True)
+                except dropbox.exceptions.ApiError as e:
+                    utils.print_string("Could not upload file '{}': {}".format(
+                        path, e), utils.PrintStyle.ERROR)
+                    sys.exit()
 
-                        # Use chunked upload
+                # Use chunked upload
                 else:
                     try:
-                        logging.info("Uploading '{}' in chunks ".format(fullname))
-                        uploader = self.client.files_upload_session_start(f.read(CHUNK_SIZE))
-                        cursor = dropbox.files.UploadSessionCursor(session_id=uploader.session_id, offset=f.tell())
+                        logging.info(
+                            "Uploading '{}' in chunks ".format(fullname))
+                        uploader = self.client.files_upload_session_start(
+                            f.read(CHUNK_SIZE))
+                        cursor = dropbox.files.UploadSessionCursor(
+                            session_id=uploader.session_id, offset=f.tell())
                         commit = dropbox.files.CommitInfo(path=path)
                         while f.tell() < file_size:
                             try:
                                 current_offset = f.tell()
                                 if (file_size - f.tell()) <= CHUNK_SIZE:
-                                    self.client.files_upload_session_finish(f.read(CHUNK_SIZE), cursor, commit)
+                                    self.client.files_upload_session_finish(
+                                        f.read(CHUNK_SIZE), cursor, commit)
                                 else:
-                                    self.client.files_upload_session_append_v2(f.read(CHUNK_SIZE), cursor)
+                                    self.client.files_upload_session_append_v2(
+                                        f.read(CHUNK_SIZE), cursor)
                                     cursor.offset = f.tell()
 
                             # Attempt to resume failed upload session
@@ -135,14 +143,14 @@ class Dropbox(DataService):
                             path, e), utils.PrintStyle.ERROR)
                         sys.exit()
 
-        utils.print_string("Successfully uploaded '{}'".format(fullname), utils.PrintStyle.SUCCESS)
+        utils.print_string("Successfully uploaded '{}'".format(
+            fullname), utils.PrintStyle.SUCCESS)
 
+    @utils.timeit
     def upload(self, rootdir, dbx_path):
         """ 
         Upload a file or folder to Dropbox
         """
-        dbx_path = dbx_path.rstrip('/')
-
         rootdir = os.path.expanduser(rootdir)
         rootdir = rootdir.replace('/', SEPARATOR)
         rootdir = rootdir.rstrip(SEPARATOR)
@@ -150,6 +158,9 @@ class Dropbox(DataService):
             utils.print_string(
                 "'{}' does not exist in your filesystem".format(rootdir), utils.PrintStyle.ERROR)
             return None
+
+        dbx_path = dbx_path.replace('\\', '/')
+        dbx_path = dbx_path.rstrip('/')
 
         logging.info('Dropbox folder:' + dbx_path)
         logging.info('Local directory:' + rootdir)
@@ -204,15 +215,16 @@ class Dropbox(DataService):
 
         utils.print_string('All uploads successfull', utils.PrintStyle.SUCCESS)
 
+    @utils.timeit
     def delete(self, dbx_path):
+        dbx_path = dbx_path.replace('\\', '/')
         dbx_path = '/' + dbx_path.lstrip('/')
-        with utils.stopwatch('delete'):
-            try:
-                md = self.client.files_delete(dbx_path)
-            except dropbox.exceptions.ApiError as err:
-                utils.print_string(
-                    "Could not delete '{}': {}".format(dbx_path, err), utils.PrintStyle.ERROR)
-                return None
+        try:
+            md = self.client.files_delete(dbx_path)
+        except dropbox.exceptions.ApiError as err:
+            utils.print_string(
+                "Could not delete '{}': {}".format(dbx_path, err), utils.PrintStyle.ERROR)
+            return None
 
         utils.print_string("Successfully deleted {}".format(
             md.name), utils.PrintStyle.SUCCESS)
@@ -236,7 +248,8 @@ def no_redirect_oauth2():
     with open("../data/dropbox_credentials.json") as f:
         data = json.load(f)
 
-    auth_flow = dropbox.DropboxOAuth2FlowNoRedirect(data.get("app_key"), use_pkce=True,token_access_type='offline')
+    auth_flow = dropbox.DropboxOAuth2FlowNoRedirect(
+        data.get("app_key"), use_pkce=True, token_access_type='offline')
     authorize_url = auth_flow.start()
 
     # Redirect user to auth_url, where they will enter their Dropbox credentials
@@ -252,9 +265,10 @@ def no_redirect_oauth2():
     try:
         oauth_result = auth_flow.finish(auth_code)
     except Exception as e:
-        utils.print_string("Error during OAuth flow: {}" .format(e),utils.PrintStyle.ERROR)
+        utils.print_string("Error during OAuth flow: {}" .format(
+            e), utils.PrintStyle.ERROR)
         sys.exit()
-    
+
     # Update crdentials file with tokens
     tokens = {
         "access_token": oauth_result.access_token,
@@ -264,12 +278,14 @@ def no_redirect_oauth2():
         data = json.load(file)
     data.update(tokens)
     with open('../data/dropbox_credentials.json', 'w') as file:
-        json.dump(data,file)
+        json.dump(data, file)
 
-    with dropbox.Dropbox(oauth2_access_token=oauth_result.access_token,oauth2_refresh_token=oauth_result.refresh_token,app_key=data.get("app_key")) as client:
+    with dropbox.Dropbox(oauth2_access_token=oauth_result.access_token, oauth2_refresh_token=oauth_result.refresh_token, app_key=data.get("app_key")) as client:
         client.users_get_current_account()
-        utils.print_string("Authentication successful!", utils.PrintStyle.SUCCESS)
+        utils.print_string("Authentication successful!",
+                           utils.PrintStyle.SUCCESS)
         return client  # Return the Dropbox client object to later use it for requests to Dropbox API
+
 
 def authenticate():
     """
@@ -280,24 +296,22 @@ def authenticate():
     # Read credentials file
     with open("../data/dropbox_credentials.json") as f:
         data = json.load(f)
-    
+
     if "access_token" in data and "refresh_token" in data:
         try:
-            client = dropbox.Dropbox(oauth2_access_token=data.get("access_token"),oauth2_refresh_token=data.get("refresh_token"), app_key=data.get("app_key"))
+            client = dropbox.Dropbox(oauth2_access_token=data.get(
+                "access_token"), oauth2_refresh_token=data.get("refresh_token"), app_key=data.get("app_key"))
             client.users_get_current_account()
         except dropbox.exceptions.AuthError as e:
-            utils.print_string("Could authenticate with access/refresh token: {}".format(e),utils.PrintStyle.WARNING)
+            utils.print_string(
+                "Could authenticate with access/refresh token: {}".format(e), utils.PrintStyle.WARNING)
             client = no_redirect_oauth2()
         except Exception as e:
-            utils.print_string("Unexpected error during authentication: {}".format(e),utils.PrintStyle.ERROR)
+            utils.print_string("Unexpected error during authentication: {}".format(
+                e), utils.PrintStyle.ERROR)
             sys.exit()
     else:
         logging.info("Tokens not found, initating OAuth flow")
         client = no_redirect_oauth2()
 
     return client
-
-    
-
-    
-    

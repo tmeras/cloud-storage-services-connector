@@ -2,7 +2,6 @@ import contextlib
 import logging
 import time
 from enum import Enum
-
 from termcolor import colored
 
 
@@ -11,7 +10,6 @@ class PrintStyle(Enum):
     WARNING = 2
     ERROR = 3
     SUCCESS = 4
-
 
 def print_string(s, style=PrintStyle.INFO):
     if style == PrintStyle.INFO:
@@ -24,7 +22,6 @@ def print_string(s, style=PrintStyle.INFO):
         print(colored(s, "green", attrs=["bold"]))
     else:
         print(s)
-
 
 def yesno(message, default):
     """
@@ -51,8 +48,7 @@ def yesno(message, default):
         if answer in ('p', 'pdb'):
             import pdb
             pdb.set_trace()
-        print_string('Please answer YES or NO',PrintStyle.WARNING)
-
+        print_string('Please answer YES or NO', PrintStyle.WARNING)
 
 @contextlib.contextmanager
 def stopwatch(message):
@@ -64,4 +60,16 @@ def stopwatch(message):
         yield
     finally:
         t1 = time.time()
-        logging.info('Total elapsed time for %s: %.3f seconds' % (message, t1 - t0))
+        logging.info('Total elapsed time for %s: %.3f seconds' %
+                     (message, t1 - t0))
+
+def timeit(method):
+    def timed(*args, **kw):
+        t0 = time.time()
+        result = method(*args, **kw)
+        t1 = time.time()
+        logging.info('Total elapsed time for %s: %.3f seconds' %
+                     (method.__name__, t1 - t0))
+
+        return result
+    return timed

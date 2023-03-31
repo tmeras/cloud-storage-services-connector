@@ -1,3 +1,4 @@
+import utils
 import hashlib
 import logging
 import os
@@ -12,7 +13,6 @@ from services.data_service import DataService
 
 # hack to allow importing modules from parent directory
 sys.path.insert(0, os.path.abspath('..'))
-import utils
 
 MB = 1024 * 1024
 THRESHOLD = 30 * MB
@@ -47,19 +47,19 @@ class Box(DataService):
             if item.name == key:
                 if item.type == key_type:
                     return item.id
-                
+
                 # Item with same name but different type exists
                 else:
                     return -1
         return None
-    
-    def traverse(self,bx_path):
+
+    def traverse(self, bx_path):
         """
         Traverse Box directory structure based on given path,
 
         Return the id and type of the item at the end of the path
         """
-        bx_path = bx_path.replace('/',SEPARATOR)
+        bx_path = bx_path.replace('/', SEPARATOR)
         if bx_path.endswith(SEPARATOR):
             key_type = 'folder'
         else:
@@ -71,7 +71,7 @@ class Box(DataService):
 
         # Root foler requested
         if bx_path == "":
-            return '0','folder'
+            return '0', 'folder'
 
         logging.info("Traversing '{}'".format(bx_path))
 
@@ -85,16 +85,19 @@ class Box(DataService):
                 if id is not None and id != -1:
                     return id, key_type
                 else:
-                    utils.print_string("Invalid path: {} '{}' doesn't exist".format(key_type,item),utils.PrintStyle.ERROR)
+                    utils.print_string("Invalid path: {} '{}' doesn't exist".format(
+                        key_type, item), utils.PrintStyle.ERROR)
                     sys.exit()
-            else:   
-                id = self.exists(current_folder, item,'folder')
+            else:
+                id = self.exists(current_folder, item, 'folder')
                 if id is not None and id != -1:
                     current_folder = self.client.folder(id)
                 else:
-                    utils.print_string("Invalid path: Folder '{}' doesn't exist".format(item),utils.PrintStyle.ERROR)
+                    utils.print_string("Invalid path: Folder '{}' doesn't exist".format(
+                        item), utils.PrintStyle.ERROR)
                     sys.exit()
 
+    @utils.timeit
     def download(self, localdir, bx_path):
         """
         Download a file or folder from Box
@@ -106,7 +109,7 @@ class Box(DataService):
             utils.print_string(
                 "'{}' is not a directory in your filesystem".format(localdir), utils.PrintStyle.ERROR)
             return None
-        
+
         item_info = None
 
         # Get item that will be downloaded
@@ -142,7 +145,6 @@ class Box(DataService):
 
         utils.print_string("Successfully downloaded '{}'".format(
             item_info.name), utils.PrintStyle.SUCCESS)
-    
 
     def upload_file(self, localdir, folder_id, file_id):
         """
@@ -164,21 +166,26 @@ class Box(DataService):
 
                     # Upload file if it doesn't exist, else update it
                     if file_id is None:
-                        logging.info("Uploading '{}' in chunks".format(localdir))
+                        logging.info(
+                            "Uploading '{}' in chunks".format(localdir))
                         uploader = self.client.folder(folder_id).create_upload_session(file_size=file_size,
                                                                                        file_name=localdir.split(SEPARATOR)[
                                                                                            -1])
                     else:
-                        logging.info("Updating '{}' in chunks".format(localdir))
-                        uploader = self.client.file(file_id).create_upload_session(file_size=file_size)
+                        logging.info(
+                            "Updating '{}' in chunks".format(localdir))
+                        uploader = self.client.file(
+                            file_id).create_upload_session(file_size=file_size)
 
                     session_id = uploader.id
                     bytes_uploaded = 0
                     for part_num in range(uploader.total_parts):
                         chunk = f.read(uploader.part_size)
-                        uploaded_part = uploader.upload_part_bytes(chunk, part_num * uploader.part_size, file_size)
+                        uploaded_part = uploader.upload_part_bytes(
+                            chunk, part_num * uploader.part_size, file_size)
                         bytes_uploaded += len(chunk)
-                        logging.info("Uploaded {} MB".format(bytes_uploaded / (1024 * 1024)))
+                        logging.info("Uploaded {} MB".format(
+                            bytes_uploaded / (1024 * 1024)))
                         parts.append(uploaded_part)
                         sha1.update(chunk)
 
@@ -186,30 +193,36 @@ class Box(DataService):
                     logging.info("Session id: {}".format(session_id))
 
                     uploader.commit(content_sha1=content_sha1, parts=parts)
-                    utils.print_string("Chunked upload of '{}' completed".format(localdir), utils.PrintStyle.SUCCESS)
+                    utils.print_string("Chunked upload of '{}' completed".format(
+                        localdir), utils.PrintStyle.SUCCESS)
 
                 except boxsdk.BoxAPIException as e:
                     utils.print_string("Could not upload '{}' in chunks: {}".format(localdir, e),
                                        utils.PrintStyle.ERROR)
                     sys.exit()
 
-            # Small file, upload in one request           
+            # Small file, upload in one request
             else:
                 try:
                     # Upload file it doesn't exist, else update it
                     if file_id is None:
-                        logging.info("Uploading '{}' in a single request".format(localdir))
+                        logging.info(
+                            "Uploading '{}' in a single request".format(localdir))
                         self.client.folder(folder_id).upload(localdir)
                     else:
-                        logging.info("Updating '{}' in a single request".format(localdir))
+                        logging.info(
+                            "Updating '{}' in a single request".format(localdir))
                         self.client.file(file_id).update_contents(localdir)
 
-                    utils.print_string("Upload of '{}' completed".format(localdir), utils.PrintStyle.SUCCESS)
+                    utils.print_string("Upload of '{}' completed".format(
+                        localdir), utils.PrintStyle.SUCCESS)
 
                 except boxsdk.BoxAPIException as e:
-                    utils.print_string("Could not upload '{}': {}".format(localdir, e), utils.PrintStyle.ERROR)
+                    utils.print_string("Could not upload '{}': {}".format(
+                        localdir, e), utils.PrintStyle.ERROR)
                     sys.exit()
 
+    @utils.timeit
     def upload(self, localdir, bx_path):
         """
         Upload a file or folder to Box
@@ -225,7 +238,8 @@ class Box(DataService):
         bx_path = bx_path.replace('/', SEPARATOR)
         bx_path = bx_path.rstrip(SEPARATOR) + SEPARATOR
         if not bx_path.endswith(SEPARATOR):
-            utils.print_string("Error: '{}' doesn't point to a Box directory".format(bx_path),utils.PrintStyle.ERROR)
+            utils.print_string("Error: '{}' doesn't point to a Box directory".format(
+                bx_path), utils.PrintStyle.ERROR)
             return None
 
         # Get Box directory to upload to
@@ -245,9 +259,10 @@ class Box(DataService):
             if id != -1:
                 self.upload_file(localdir, folder_id, id)
             else:
-                utils.print_string("Cannot upload '{}', name already in use by another item of different type".format(key),utils.PrintStyle.ERROR)
+                utils.print_string("Cannot upload '{}', name already in use by another item of different type".format(
+                    key), utils.PrintStyle.ERROR)
                 return None
-                
+
         # Upload folder content
         elif os.path.isdir(localdir):
             logging.info(localdir + ' is a local folder')
@@ -301,6 +316,7 @@ class Box(DataService):
 
         utils.print_string("All uploads successfull", utils.PrintStyle.SUCCESS)
 
+    @utils.timeit
     def delete(self, bx_path):
         """
         Delete a file or folder from Box
@@ -325,7 +341,8 @@ class Box(DataService):
     def close(self):
         None
 
-def store_tokens(access_token,refresh_token):
+
+def store_tokens(access_token, refresh_token):
     """
     Store access and refresh token
     """
@@ -338,7 +355,7 @@ def store_tokens(access_token,refresh_token):
         data = json.load(file)
     data.update(tokens)
     with open('../data/box_credentials.json', 'w') as file:
-        json.dump(data,file)
+        json.dump(data, file)
 
 
 def authenticate_OAuth2():
@@ -401,6 +418,7 @@ def authenticate_OAuth2():
 
     return boxsdk.Client(oauth)
 
+
 def authenticate():
     """
     Authenticate user using access and refresh token.
@@ -410,8 +428,7 @@ def authenticate():
     # Read credentials file
     with open("../data/box_credentials.json") as f:
         data = json.load(f)
-    
-        
+
     if "access_token" in data and "refresh_token" in data:
         try:
             oauth = boxsdk.OAuth2(
@@ -423,10 +440,12 @@ def authenticate():
             client = boxsdk.Client(oauth)
             client.user().get()
         except boxsdk.BoxOAuthException as e:
-            utils.print_string("Could authenticate with access/refresh token: {}".format(e),utils.PrintStyle.WARNING)
+            utils.print_string(
+                "Could authenticate with access/refresh token: {}".format(e), utils.PrintStyle.WARNING)
             client = authenticate_OAuth2()
         except Exception as e:
-            utils.print_string("Unexpected error during authentication: {}".format(e),utils.PrintStyle.ERROR)
+            utils.print_string("Unexpected error during authentication: {}".format(
+                e), utils.PrintStyle.ERROR)
             sys.exit()
     else:
         logging.info("Tokens not found, initating OAuth flow")

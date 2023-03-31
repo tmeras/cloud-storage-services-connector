@@ -1,7 +1,9 @@
+import json
 import datetime
 import logging
 import os
 import sys
+import webbrowser
 import time
 import dropbox
 import requests
@@ -11,24 +13,22 @@ from .data_service import DataService
 # hack to allow importing modules from parent directory
 sys.path.insert(0, os.path.abspath('..'))
 
-
-ACCESS_TOKEN = "sl.BaO2FgyVXm3qvApX1boMYbCl1G94_pNlntMatDSMQfF3kWLqSro2d0K48kwM6r_gfF7S_P8LBiIa50Yhel3RwpWVUZPrqLkSB__-k1TOAfyAdacRrcZDwkSnwywPe3mfEeMoFe8"
-
-# Upload chunk size
-CHUNK_SIZE = 8 * 1024 * 1024
-
+MB = 1024 * 1024
+CHUNK_SIZE = 4 * MB
+THRESHOLD = 30 * MB
+SEPARATOR = os.path.sep
 
 class Dropbox(DataService):
     def __init__(self):
-        self.client = dropbox.Dropbox(ACCESS_TOKEN)
+        self.client = authenticate()
 
     def download(self, local_path, dbx_path):
         """
         Download a file or folder from Dropbox
         """
         local_path = os.path.expanduser(local_path)
-        local_path = local_path.replace(os.path.sep, '/')
-        local_path = local_path.rstrip('/') + '/'
+        local_path = local_path.replace('/', SEPARATOR)
+        local_path = local_path.rstrip(SEPARATOR) + SEPARATOR
         if not os.path.exists(local_path):
             utils.print_string(
                 "{} does not exist in your filesystem".format(local_path), utils.PrintStyle.ERROR)
@@ -98,7 +98,7 @@ class Dropbox(DataService):
             with utils.stopwatch('upload of %d bytes' % file_size):
 
                 # Small file, upload in a single request
-                if file_size <= CHUNK_SIZE:
+                if file_size <= THRESHOLD:
                     try:
                         logging.info("Uploading '{}' in a single request ".format(fullname))
                         self.client.files_upload(
@@ -144,8 +144,8 @@ class Dropbox(DataService):
         dbx_path = dbx_path.rstrip('/')
 
         rootdir = os.path.expanduser(rootdir)
-        rootdir = rootdir.rstrip(os.path.sep)
-        rootdir = rootdir.replace(os.path.sep, '/')
+        rootdir = rootdir.replace('/', SEPARATOR)
+        rootdir = rootdir.rstrip(SEPARATOR)
         if not os.path.exists(rootdir):
             utils.print_string(
                 "'{}' does not exist in your filesystem".format(rootdir), utils.PrintStyle.ERROR)
@@ -157,7 +157,7 @@ class Dropbox(DataService):
         # Upload file
         if os.path.isfile(rootdir):
             logging.info(rootdir + ' is a local file')
-            file_name = rootdir.split('/')[-1]
+            file_name = rootdir.split(SEPARATOR)[-1]
             logging.info("Uploading file '{}' ".format(rootdir))
             self.upload_file(rootdir, dbx_path, "", file_name)
 
@@ -165,7 +165,7 @@ class Dropbox(DataService):
         elif os.path.isdir(rootdir):
             logging.info(rootdir + ' is a local directory')
             for dn, dirs, files in os.walk(rootdir):
-                subfolder = dn[len(rootdir):].strip(os.path.sep)
+                subfolder = dn[len(rootdir):].strip(SEPARATOR)
                 if subfolder != '':
                     logging.info("Descending into '{}' ...".format(subfolder))
 
@@ -222,6 +222,7 @@ class Dropbox(DataService):
         Close Dropbox handler, cleaning up resources.
         """
         if isinstance(self.client, dropbox.Dropbox):
+            logging.info("Cleaning up Dropbox resources")
             self.client.close()
         else:
             logging.warning("Error when cleaning up Dropbox resources.")
@@ -229,29 +230,74 @@ class Dropbox(DataService):
 
 def no_redirect_oauth2():
     """
-    Goes through a basic oauth flow using the existing long-lived token type
+    Goes through a basic OAuth flow using a short-lived token type
     """
-    APP_KEY = "t1uokr1i2qj9ot1"
-    APP_SECRET = "yxrwv0tc5fipf8e"
+    # Read credentials file
+    with open("../data/dropbox_credentials.json") as f:
+        data = json.load(f)
 
-    auth_flow = dropbox.DropboxOAuth2FlowNoRedirect(APP_KEY, APP_SECRET)
+    auth_flow = dropbox.DropboxOAuth2FlowNoRedirect(data.get("app_key"), use_pkce=True,token_access_type='offline')
     authorize_url = auth_flow.start()
+
+    # Redirect user to auth_url, where they will enter their Dropbox credentials
+    webbrowser.open(authorize_url)
+
     utils.print_string("1. Go to: " + authorize_url, utils.PrintStyle.INFO)
     utils.print_string(
         "2. Click \"Allow\" (you might have to log in first).", utils.PrintStyle.INFO)
     utils.print_string("3. Copy the authorization code.",
                        utils.PrintStyle.INFO)
     auth_code = input("Enter the authorization code here: ").strip()
+
     try:
         oauth_result = auth_flow.finish(auth_code)
     except Exception as e:
-        sys.exit('Error: ' + e)
+        utils.print_string("Error during OAuth flow: {}" .format(e),utils.PrintStyle.ERROR)
+        sys.exit()
+    
+    # Update crdentials file with tokens
+    tokens = {
+        "access_token": oauth_result.access_token,
+        "refresh_token": oauth_result.refresh_token
+    }
+    with open('../data/dropbox_credentials.json') as file:
+        data = json.load(file)
+    data.update(tokens)
+    with open('../data/dropbox_credentials.json', 'w') as file:
+        json.dump(data,file)
 
-    with dropbox.Dropbox(oauth2_access_token=oauth_result.access_token) as client:
+    with dropbox.Dropbox(oauth2_access_token=oauth_result.access_token,oauth2_refresh_token=oauth_result.refresh_token,app_key=data.get("app_key")) as client:
         client.users_get_current_account()
         utils.print_string("Authentication successful!", utils.PrintStyle.SUCCESS)
-        return client  # Return the Dropbox object to later use it for requests to Dropbox API
+        return client  # Return the Dropbox client object to later use it for requests to Dropbox API
 
+def authenticate():
+    """
+    Authenticate user using access and refresh token.
 
-if __name__ == "__main__":
-    dbx = DataService.build(dropbox)
+    If there are no (valid) tokens avaialble, initiate new OAuth flow
+    """
+    # Read credentials file
+    with open("../data/dropbox_credentials.json") as f:
+        data = json.load(f)
+    
+    if "access_token" in data and "refresh_token" in data:
+        try:
+            client = dropbox.Dropbox(oauth2_access_token=data.get("access_token"),oauth2_refresh_token=data.get("refresh_token"), app_key=data.get("app_key"))
+            client.users_get_current_account()
+        except dropbox.exceptions.AuthError as e:
+            utils.print_string("Could authenticate with access/refresh token: {}".format(e),utils.PrintStyle.WARNING)
+            client = no_redirect_oauth2()
+        except Exception as e:
+            utils.print_string("Unexpected error during authentication: {}".format(e),utils.PrintStyle.ERROR)
+            sys.exit()
+    else:
+        logging.info("Tokens not found, initating OAuth flow")
+        client = no_redirect_oauth2()
+
+    return client
+
+    
+
+    
+    

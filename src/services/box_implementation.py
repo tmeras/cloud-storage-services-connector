@@ -2,6 +2,7 @@ import hashlib
 import logging
 import os
 import sys
+import json
 import webbrowser
 from threading import Thread, Event
 from wsgiref.simple_server import WSGIServer, WSGIRequestHandler, make_server
@@ -14,17 +15,13 @@ sys.path.insert(0, os.path.abspath('..'))
 import utils
 
 MB = 1024 * 1024
+THRESHOLD = 30 * MB
+SEPARATOR = os.path.sep
+
 
 class Box(DataService):
     def __init__(self):
-        # Using OAuth2
-        # self.client = authenticate_OAuth2()
-
-        # Using developer token
-        auth = boxsdk.OAuth2(client_id='u5jubneda8hf7va31wdhgjv0l4poqykj',
-                             client_secret='vKAy2N7rsHO99e00OOGB54AMDMKoiA0p',
-                             access_token='ogZ8ohTGmk8QqZ5G0VU3nynRzwyUmsvj')
-        self.client = boxsdk.Client(auth)
+        self.client = authenticate()
 
     def get_path(self, id, is_folder=False):
         """
@@ -37,8 +34,8 @@ class Box(DataService):
 
         path = ''
         for item in info.path_collection['entries']:
-            path += '/' + item.name
-        path += '/' + info.name
+            path += SEPARATOR + item.name
+        path += SEPARATOR + info.name
 
         return path
 
@@ -62,14 +59,15 @@ class Box(DataService):
 
         Return the id and type of the item at the end of the path
         """
-        if bx_path.endswith('/'):
+        bx_path = bx_path.replace('/',SEPARATOR)
+        if bx_path.endswith(SEPARATOR):
             key_type = 'folder'
         else:
             key_type = 'file'
 
-        bx_path = bx_path.strip('/')
+        bx_path = bx_path.strip(SEPARATOR)
         bx_path = bx_path.removeprefix('All Files')
-        bx_path = bx_path.lstrip('/')
+        bx_path = bx_path.lstrip(SEPARATOR)
 
         # Root foler requested
         if bx_path == "":
@@ -78,7 +76,7 @@ class Box(DataService):
         logging.info("Traversing '{}'".format(bx_path))
 
         current_folder = self.client.root_folder().get()
-        names = bx_path.split('/')
+        names = bx_path.split(SEPARATOR)
         for item in names:
             # Reached final item, return its id if it exists on Box
             if item == names[-1]:
@@ -102,7 +100,8 @@ class Box(DataService):
         Download a file or folder from Box
         """
         localdir = os.path.expanduser(localdir)
-        localdir = localdir.rstrip(os.path.sep)
+        localdir = localdir.replace('/', SEPARATOR)
+        localdir = localdir.rstrip(SEPARATOR)
         if not os.path.isdir(localdir):
             utils.print_string(
                 "'{}' is not a directory in your filesystem".format(localdir), utils.PrintStyle.ERROR)
@@ -151,14 +150,14 @@ class Box(DataService):
 
         If the file already exists, update it
 
-        Use chunked upload/update for files larger than 30 MB
+        Use chunked upload/update for large files
         """
         file_size = os.path.getsize(localdir)
 
         with open(localdir, 'rb') as f:
 
             # Large file, upload in chunks
-            if file_size > 30 * MB:
+            if file_size > THRESHOLD:
                 try:
                     sha1 = hashlib.sha1()
                     parts = []
@@ -167,7 +166,7 @@ class Box(DataService):
                     if file_id is None:
                         logging.info("Uploading '{}' in chunks".format(localdir))
                         uploader = self.client.folder(folder_id).create_upload_session(file_size=file_size,
-                                                                                       file_name=localdir.split('/')[
+                                                                                       file_name=localdir.split(SEPARATOR)[
                                                                                            -1])
                     else:
                         logging.info("Updating '{}' in chunks".format(localdir))
@@ -216,16 +215,16 @@ class Box(DataService):
         Upload a file or folder to Box
         """
         localdir = os.path.expanduser(localdir)
-        localdir = localdir.rstrip(os.path.sep)
-        localdir = localdir.replace(os.path.sep, '/')
+        localdir = localdir.replace('/', SEPARATOR)
+        localdir = localdir.rstrip(SEPARATOR)
         if not os.path.exists(localdir):
             utils.print_string("'{}' does not exist in your filesystem".format(
                 localdir), utils.PrintStyle.ERROR)
             return None
 
-        folder_info = None
-
-        if not bx_path.endswith('/'):
+        bx_path = bx_path.replace('/', SEPARATOR)
+        bx_path = bx_path.rstrip(SEPARATOR) + SEPARATOR
+        if not bx_path.endswith(SEPARATOR):
             utils.print_string("Error: '{}' doesn't point to a Box directory".format(bx_path),utils.PrintStyle.ERROR)
             return None
 
@@ -241,7 +240,7 @@ class Box(DataService):
             logging.info(localdir + ' is a local file')
 
             folder_id = folder_info.id
-            key = localdir.split('/')[-1]
+            key = localdir.split(SEPARATOR)[-1]
             id = self.exists(self.client.folder(folder_id), key, 'file')
             if id != -1:
                 self.upload_file(localdir, folder_id, id)
@@ -323,13 +322,32 @@ class Box(DataService):
             utils.print_string("Could not delete '{}'".format(
                 bx_path), utils.PrintStyle.ERROR)
 
+    def close(self):
+        None
+
+def store_tokens(access_token,refresh_token):
+    """
+    Store access and refresh token
+    """
+    # Update credentials file with tokens
+    tokens = {
+        "access_token": access_token,
+        "refresh_token": refresh_token
+    }
+    with open('../data/box_credentials.json') as file:
+        data = json.load(file)
+    data.update(tokens)
+    with open('../data/box_credentials.json', 'w') as file:
+        json.dump(data,file)
+
 
 def authenticate_OAuth2():
     """
     Authenticate using traditional 3-legged OAuth2
     """
-    CLIENT_ID = 'u5jubneda8hf7va31wdhgjv0l4poqykj'
-    CLIENT_SECRET = 'vKAy2N7rsHO99e00OOGB54AMDMKoiA0p'
+    # Read credentials file
+    with open("../data/box_credentials.json") as f:
+        data = json.load(f)
 
     class StoppableWSGIServer(bottle.ServerAdapter):
         def __init__(self, *args, **kwargs):
@@ -363,8 +381,9 @@ def authenticate_OAuth2():
     server_thread.start()
 
     oauth = boxsdk.OAuth2(
-        client_id=CLIENT_ID,
-        client_secret=CLIENT_SECRET,
+        client_id=data.get("app_key"),
+        client_secret=data.get("app_secret"),
+        store_tokens=store_tokens
     )
     auth_url, csrf_token = oauth.get_authorization_url('http://localhost:8080')
 
@@ -382,7 +401,35 @@ def authenticate_OAuth2():
 
     return boxsdk.Client(oauth)
 
-if __name__ == '__main__':
-    logging.basicConfig(level = logging.INFO)
-    bx = Box()
-    bx.upload("/Users/teomeras/Desktop/foldertest","All Files/")
+def authenticate():
+    """
+    Authenticate user using access and refresh token.
+
+    If there are no (valid) tokens available, initiate new OAuth flow
+    """
+    # Read credentials file
+    with open("../data/box_credentials.json") as f:
+        data = json.load(f)
+    
+        
+    if "access_token" in data and "refresh_token" in data:
+        try:
+            oauth = boxsdk.OAuth2(
+                client_id=data.get("app_key"),
+                client_secret=data.get("app_secret"),
+                access_token=data.get("access_token"),
+                refresh_token=data.get("refresh_token"),
+            )
+            client = boxsdk.Client(oauth)
+            client.user().get()
+        except boxsdk.BoxOAuthException as e:
+            utils.print_string("Could authenticate with access/refresh token: {}".format(e),utils.PrintStyle.WARNING)
+            client = authenticate_OAuth2()
+        except Exception as e:
+            utils.print_string("Unexpected error during authentication: {}".format(e),utils.PrintStyle.ERROR)
+            sys.exit()
+    else:
+        logging.info("Tokens not found, initating OAuth flow")
+        client = authenticate_OAuth2()
+
+    return client

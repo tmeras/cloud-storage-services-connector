@@ -546,7 +546,7 @@ Through the results gathered in ~\cite{personal1}, it was confirmed that all tes
 		\caption{\label{fig:bundling}Bundling capabilities}
 	\end{figure}
 	
-	\item[\textbf{Chunking}] means transmitting large files in chunks, rather than in one transmission, simplifying error recovery and making partial submissions easier to implement. The TCP connections illustrated in \ref{fig:chunking} reveal the chunking strategies used by Google Drive and Dropbox. Specifically, the former uses 8 MB chunks and the latter 4 MB chunks and, surprisingly, chunking is only by Google Drive when  downloading files. Additionally, while Box makes use of chunking ~\cite{box_chunked}, the results on it from this experiment are not displayed.
+	\item[\textbf{Chunking}] means transmitting large files in chunks, rather than in one transmission, simplifying error recovery and making partial submissions easier to implement. The TCP connections illustrated in \ref{fig:chunking} reveal the chunking strategies used by Google Drive and Dropbox. Specifically, the former uses 8 MB chunks and the latter 4 MB chunks and, surprisingly, chunking is only used by Google Drive when downloading files. Additionally, while Box makes use of chunking ~\cite{box_chunked}, the results on it from this experiment are not displayed.
 	
 	\begin{figure} [h]
 		\centering

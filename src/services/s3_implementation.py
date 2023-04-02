@@ -12,8 +12,8 @@ from services.data_service import DataService
 sys.path.insert(0, os.path.abspath('..'))
 
 MB = 1024 * 1024
-CHUNK_SIZE = 4 * MB
-THRESHOLD = 30 * MB
+CHUNK_SIZE = 32 * MB
+THRESHOLD = 32 * MB
 SEPARATOR = os.path.sep
 
 
@@ -406,8 +406,17 @@ def authenticate():
     Setup as described in: https://docs.aws.amazon.com/cli/latest/userguide/sso-configure-profile-token.html
     needs to first be completed
     """
-    # If using a different profile from ~/.aws/config, specify it here
-    session = boto3.Session(profile_name='default')
+    try:
+        # If using a different profile from ~/.aws/config, specify it here
+        session = boto3.Session(profile_name='default')
 
-    client = session.client('s3')
+        client = session.client('s3')
+        client.list_buckets()
+    except botocore.exceptions.TokenRetrievalError as e:
+        utils.print_string("Error while authenticating, please run the 'aws sso login' command to refresh access token",utils.PrintStyle.ERROR)
+        sys.exit()
+    except Exception as e:
+        utils.print_string("Error whie authenticating: {}".format(e),utils.PrintStyle.ERROR)
+        sys.exit()
+
     return client

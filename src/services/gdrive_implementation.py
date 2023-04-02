@@ -16,8 +16,8 @@ from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 sys.path.insert(0, os.path.abspath('..'))
 
 MB = 1024 * 1024
-CHUNK_SIZE = 4 * MB
-THRESHOLD = 30 * MB
+CHUNK_SIZE = 32 * MB
+THRESHOLD = 32 * MB
 SEPARATOR = os.path.sep
 
 
@@ -464,7 +464,6 @@ def authenticate_OAuth2():
 
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
-
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:

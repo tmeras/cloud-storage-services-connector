@@ -2,7 +2,6 @@ import argparse
 import logging
 import sys
 import utils
-import json
 import services.data_service as ds
 
 
@@ -167,7 +166,7 @@ def parse_arguments():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.WARNING)
 
     args = parse_arguments()
     logging.debug(args)

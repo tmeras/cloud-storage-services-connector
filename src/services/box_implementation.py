@@ -15,7 +15,7 @@ from services.data_service import DataService
 sys.path.insert(0, os.path.abspath('..'))
 
 MB = 1024 * 1024
-THRESHOLD = 30 * MB
+THRESHOLD = 32 * MB
 SEPARATOR = os.path.sep
 
 
@@ -177,6 +177,7 @@ class Box(DataService):
                         uploader = self.client.file(
                             file_id).create_upload_session(file_size=file_size)
 
+                    logging.warning("Chunk size: {}".format(uploader.part_size / MB))
                     session_id = uploader.id
                     bytes_uploaded = 0
                     for part_num in range(uploader.total_parts):
@@ -191,6 +192,7 @@ class Box(DataService):
 
                     content_sha1 = sha1.digest()
                     logging.info("Session id: {}".format(session_id))
+
 
                     uploader.commit(content_sha1=content_sha1, parts=parts)
                     utils.print_string("Chunked upload of '{}' completed".format(

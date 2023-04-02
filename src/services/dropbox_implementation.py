@@ -14,8 +14,8 @@ from .data_service import DataService
 sys.path.insert(0, os.path.abspath('..'))
 
 MB = 1024 * 1024
-CHUNK_SIZE = 4 * MB
-THRESHOLD = 30 * MB
+CHUNK_SIZE = 32 * MB
+THRESHOLD = 32 * MB
 SEPARATOR = os.path.sep
 
 
@@ -113,35 +113,35 @@ class Dropbox(DataService):
                         path, e), utils.PrintStyle.ERROR)
                     sys.exit()
 
-                # Use chunked upload
-                else:
-                    try:
-                        logging.info(
-                            "Uploading '{}' in chunks ".format(fullname))
-                        uploader = self.client.files_upload_session_start(
-                            f.read(CHUNK_SIZE))
-                        cursor = dropbox.files.UploadSessionCursor(
-                            session_id=uploader.session_id, offset=f.tell())
-                        commit = dropbox.files.CommitInfo(path=path)
-                        while f.tell() < file_size:
-                            try:
-                                current_offset = f.tell()
-                                if (file_size - f.tell()) <= CHUNK_SIZE:
-                                    self.client.files_upload_session_finish(
-                                        f.read(CHUNK_SIZE), cursor, commit)
-                                else:
-                                    self.client.files_upload_session_append_v2(
-                                        f.read(CHUNK_SIZE), cursor)
-                                    cursor.offset = f.tell()
+            # Use chunked upload
+            else:
+                try:
+                    logging.info(
+                        "Uploading '{}' in chunks ".format(fullname))
+                    uploader = self.client.files_upload_session_start(
+                        f.read(CHUNK_SIZE))
+                    cursor = dropbox.files.UploadSessionCursor(
+                        session_id=uploader.session_id, offset=f.tell())
+                    commit = dropbox.files.CommitInfo(path=path)
+                    while f.tell() < file_size:
+                        try:
+                            current_offset = f.tell()
+                            if (file_size - f.tell()) <= CHUNK_SIZE:
+                                self.client.files_upload_session_finish(
+                                    f.read(CHUNK_SIZE), cursor, commit)
+                            else:
+                                self.client.files_upload_session_append_v2(
+                                    f.read(CHUNK_SIZE), cursor)
+                                cursor.offset = f.tell()
 
-                            # Attempt to resume failed upload session
-                            except requests.exceptions.ConnectionError as e:
-                                f.seek(current_offset)
-                                cursor.offset = current_offset
-                    except dropbox.exceptions.ApiError as e:
-                        utils.print_string("Could not upload file '{}' in chunks: {}".format(
-                            path, e), utils.PrintStyle.ERROR)
-                        sys.exit()
+                        # Attempt to resume failed upload session
+                        except requests.exceptions.ConnectionError as e:
+                            f.seek(current_offset)
+                            cursor.offset = current_offset
+                except dropbox.exceptions.ApiError as e:
+                    utils.print_string("Could not upload file '{}' in chunks: {}".format(
+                        path, e), utils.PrintStyle.ERROR)
+                    sys.exit()
 
         utils.print_string("Successfully uploaded '{}'".format(
             fullname), utils.PrintStyle.SUCCESS)

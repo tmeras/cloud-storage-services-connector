@@ -68,7 +68,7 @@ def timeit(method):
         t0 = time.time()
         result = method(*args, **kw)
         t1 = time.time()
-        logging.info('Total elapsed time for %s: %.3f seconds' %
+        logging.warning('Total elapsed time for %s: %.2f seconds' %
                      (method.__name__, t1 - t0))
 
         return result

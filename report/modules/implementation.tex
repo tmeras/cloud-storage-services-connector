@@ -1,7 +1,7 @@
 \chapter{Implementation}
 
 \section{Introduction}
-For this project, we opted to use Python 3 (specific version shown in table \ref{tab:Python_Version}) and applied object-oriented programming principles to modularize our implementation of the selected cloud storage services: Dropbox, Box, Google Drive, Amazon S3 and Azure Blob Storage. 
+For this project, we opted to use Python 3 (specific version shown in table \ref{tab:Python_Version}) and applied object-oriented programming principles to modularize our implementation of our library, which provides a single interface for accessing the following cloud storage services: Dropbox, Box, Google Drive, Amazon S3 and Azure Blob Storage. 
 
 
 \begin{table}[!h]
@@ -56,6 +56,7 @@ Additionally, to track events that occur during program execution, we used Pytho
 	\label{tab:Logging_Levels}
 \end{table}
 
+Finally, our library is cross-platform compatible, working well across Windows 10, macOS and Linux, and all software that were used or accounts that were created for the purposes of this project were free of charge.
 
 \section{Dropbox Implementation}
 The Dropbox Python SDK provided functionality for all major Dropbox features including the creation and management (uploading, rename, requesting, versioning, tagging etc.)  of files and folders, Dropbox Papers, shared links and shared folders, and the management of both users and teams ~\cite{dropbox_docs}. 
@@ -118,9 +119,5 @@ To perform S3 operations, Boto3 requires a bucket name and (sometimes) the objec
  	
  	\item \textbf{\textit{Download}:} Folder downloads are not offered as a method by Boto3 so, like in the case of Box, all included files need to be manually downloaded and all included folders need to be locally created. Similarly, the download of buckets is not supported, thus requiring a manual download of all bucket contents instead.
  	
- 	\item \textbf{\textit{Delete}:} Boto3 offers methods for the deletion of both buckets and objects. The former, however, must first be emptied, which means deleting all included objects.
+ 	\item \textbf{\textit{Delete}:} Boto3 offers methods for the deletion of both buckets and objects, but the former must first be emptied, which means deleting all included objects. Because S3 folders are symbolic, however, they cannot be directly deleted. Instead, all included objects must be deleted, which also automatically deletes the parent folder.
  \end{enumerate}
-
-
-\section{Summary}
-Summarise what was said in this chapter and link with the next chapter.

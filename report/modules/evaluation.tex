@@ -1,23 +1,25 @@
 \chapter{Evaluation}
 
-\section{Introduction}
-In order to evaluate the performance of our library, we measured the time required to upload, download and delete files which ranged from 1MB to 1GB in size. We executed all 3 operations on each file size, for each service (Dropbox, Box, Google Drive, S3), 5 times, and then calculated and recorded the mean duration. The specifications of the computer used to make the API calls and measure execution time are detailed in table \ref{tab:pc_specs}, and the computer was connected via Ethernet to a network which supported 100Mbps download speed and 10Mbps upload speed. Furthermore, chunked uploads were used across all services, and a chunk size of 32MB was specified. The only exception to this was Box, as it automatically determined the optimal chunk size which was, however, 32MB for larger files ($>$100MB). Finally, no warm-up time was used for this evaluation.
+\section{Evaluation Setup}
+In order to evaluate the performance of our library, we measured the time required to upload, download and delete files which ranged from 1MB to 1GB in size. We executed all 3 operations on each file size, for each service (Dropbox, Box, Google Drive, S3), 5 times, and then calculated and recorded the mean duration. The specifications of the computer and network used to make the API calls and measure execution time are detailed in table \ref{tab:pc_specs}. Furthermore, chunked uploads were used across all services, with a chunk size of 32MB. The only exception to this was Box, as it automatically determined the optimal chunk size which was, however, 32MB for larger files ($>$100MB). Finally, no warm-up time was used for this evaluation.
 
 \begin{table}[!h]
+	\centering
 	\begin{tabular}{|
 			>{\columncolor[HTML]{EFEFEF}}l |l|}
 		\hline
-		\textbf{Operating System} & Windows 10                               \\ \hline
-		\textbf{Processor}        & Intel(R) Core(TM) i5-9600K CPU @ 3.70GHz \\ \hline
-		\textbf{Memory}           & 16 GB RAM                                \\ \hline
-		\textbf{Storage}          & 1TB NVMe SSD                             \\ \hline
+		\textbf{Operating System} & Windows 10                                      \\ \hline
+		\textbf{Processor}        & Intel(R) Core(TM) i5-9600K CPU @ 3.70GHz        \\ \hline
+		\textbf{Memory}           & 16GB RAM                                        \\ \hline
+		\textbf{Storage}          & 1TB NVMe SSD                                    \\ \hline
+		\textbf{Network}          & 100Mbps download and 10Mbps upload via Ethernet \\ \hline
 	\end{tabular}
-	\caption{PC Specifications }
+	\caption{PC and Network Specifications}
 	\label{tab:pc_specs}
 \end{table}
 
 \section{Upload Duration}
-The results on upload duration are depicted in figure \ref{fig:upload_duration}, and it can be observed that all services perform more or less identically for small file sizes (i.e. sizes smaller than 50MB ). From that point on,  as the file sizes increase, S3 and Dropbox continue to exhibit very comparable performance, with upload times steadily increasing as the file size also increases.  However, Box and especially Google Drive struggle to keep up. Specifically, Box performs about as well as S3 and Dropbox for file sizes up to 100, but then starts to fall behind, requiring around 1 additional minute to complete the uploads. Google Drive fares much worse, though, as it performs quite well for small file sizes, but its performance starts to seriously degrade for 50MB files or larger. In fact, it requires around double the amount of time and, in some cases, even more than that. This poor performance can only be explained by limitations that have been placed which affect the  upload speed when making calls to the Google Drive API for chunked uploads of larger files. Regardless of the chunk size that was specified, no noticeable improvement was noticed, and this underwhelming performance of chunked uploads has been reported by other API users in the past ~\cite{drive_chunked_performance}. In general, from our evaluation, Amazon S3 was the fastest, with 457s for 1GB, while Box and Dropbox needed 538s and 438s, respectively, for the same file. Google Drive was by far the slowest, requiring 1154s for 1GB.
+The results on upload duration are depicted in figure \ref{fig:upload_duration}, and it can be observed that all services perform more or less identically for small file sizes (i.e. sizes smaller than 50MB). From that point on,  as the file sizes increase, S3 and Dropbox continue to exhibit very comparable performance, with upload times steadily increasing as the file size also increases.  However, Box and especially Google Drive struggle to keep up. Specifically, Box performs about as well as S3 and Dropbox for file sizes up to 100, but then starts to fall behind, requiring around 1 additional minute to complete the uploads. Google Drive fares much worse, though, as it performs quite well for small file sizes, but its performance starts to seriously degrade for 50MB files or larger. In fact, it requires around double the amount of time and, in some cases, even more than that. This poor performance can only be explained by limitations that have been placed which affect the  upload speed when making calls to the Google Drive API for chunked uploads of larger files. Regardless of the chunk size that was specified, no noticeable improvement was noticed, and this underwhelming performance of chunked uploads has been reported by other API users in the past ~\cite{drive_chunked_performance}. In general, from our evaluation, Amazon S3 was the fastest, with 457s for 1GB, while Box and Dropbox needed 538s and 438s, respectively, for the same file. Google Drive was by far the slowest, requiring 1154s for 1GB.
 
 \begin{figure} [!h]
 	\centering
@@ -42,7 +44,3 @@ The results shown in figure \ref{fig:deletion_duration} make it clear that all s
 	\includegraphics[scale=0.5]{images/deletion_chart}
 	\caption{\label{fig:deletion_duration}Deletion Duration}
 \end{figure}
-
-\section{Future work}
-
-\section{Conclusions}

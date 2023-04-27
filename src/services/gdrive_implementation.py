@@ -221,7 +221,6 @@ class Gdrive(DataService):
                 else:
                     self.download_file(path, item.get('id'))
 
-    @utils.timeit
     def download(self, localdir, gd_path):
         """
         Download Google Drive file or directory
@@ -321,7 +320,6 @@ class Gdrive(DataService):
                     localdir, e), utils.PrintStyle.ERROR)
                 sys.exit()
 
-    @utils.timeit   
     def upload(self, localdir, gd_path):
         """
         Upload file or directory to Google Drive
@@ -355,11 +353,30 @@ class Gdrive(DataService):
         # Upload folder content
         elif os.path.isdir(localdir):
             logging.info(localdir + " is a local directory")
+            name = localdir.split(SEPARATOR)[-1]
+
+            # Create subfolder where contents will be uploaded, if it doesn't already exist
+            folder_id = self.exists(gfolder.get('id'), name, True)
+            if folder_id is None:
+                logging.info(
+                    "Creating Google Drive subdirectory '{}'".format(name))
+                try:
+                    metadata = {
+                        'name': name,
+                        'mimeType': 'application/vnd.google-apps.folder',
+                        'parents': [gfolder.get('id')]
+                    }
+                    current_folder = self.client.files().create(
+                        body=metadata, fields='id').execute()
+                except HttpError as e:
+                    utils.print_string("Could not create folder '{}' on Google Drive: {}".format(
+                    name, e), utils.PrintStyle.ERROR)
+            else:
+                current_folder = self.client.files().get(fileId=folder_id).execute()
 
             # Dict mapping Google Drive folders with their local absolute paths
             folders = {}
 
-            current_folder = gfolder
             for dn, dirs, files in os.walk(localdir):
                 subfolder = dn[len(localdir):].strip(os.path.sep)
                 if subfolder != '':
@@ -418,7 +435,6 @@ class Gdrive(DataService):
                 dirs[:] = keep
         utils.print_string("All uploads successful", utils.PrintStyle.SUCCESS)
 
-    @utils.timeit
     def delete(self, gd_path):
         """
         Delete Google Drive file or directory

@@ -97,7 +97,6 @@ class Box(DataService):
                         item), utils.PrintStyle.ERROR)
                     sys.exit()
 
-    @utils.timeit
     def download(self, localdir, bx_path):
         """
         Download a file or folder from Box
@@ -224,7 +223,6 @@ class Box(DataService):
                         localdir, e), utils.PrintStyle.ERROR)
                     sys.exit()
 
-    @utils.timeit
     def upload(self, localdir, bx_path):
         """
         Upload a file or folder to Box
@@ -265,14 +263,21 @@ class Box(DataService):
                     key), utils.PrintStyle.ERROR)
                 return None
 
-        # Upload folder content
+        # Upload folder contents
         elif os.path.isdir(localdir):
             logging.info(localdir + ' is a local folder')
+            name = localdir.split(SEPARATOR)[-1]
+
+            # Create subfolder where contents wil be uploaded, if it doesn't already exist
+            id = self.exists(self.client.folder(folder_info.id), name, 'folder')
+            if id is None:
+                logging.info('Creating Box subfolder ' + name)
+                id = self.client.folder(folder_info.id).create_subfolder(name).get().id
+            current_folder = self.client.folder(id)
 
             # Dict mapping Box folder ids with their local absolute paths
             folders = {}
 
-            current_folder = self.client.folder(folder_info.id)
             for dn, dirs, files in os.walk(localdir):
                 subfolder = dn[len(localdir):].strip(os.path.sep)
                 if subfolder != '':
@@ -318,7 +323,6 @@ class Box(DataService):
 
         utils.print_string("All uploads successfull", utils.PrintStyle.SUCCESS)
 
-    @utils.timeit
     def delete(self, bx_path):
         """
         Delete a file or folder from Box

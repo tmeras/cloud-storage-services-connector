@@ -81,6 +81,8 @@ class S3(DataService):
                         path = os.path.join(dir, last)
                     else:
                         path = os.path.join(localdir, last)
+                    
+                    logging.info("path: " + path)
 
                     logging.info("Downloading file '{}'".format(object['Key']))
                     self.client.download_file(bucket_name, object['Key'], path)
@@ -103,7 +105,6 @@ class S3(DataService):
                     folder_name, e), utils.PrintStyle.ERROR)
             return False
 
-    @utils.timeit
     def download(self, localdir, s3_path):
         """
         Download S3 content
@@ -132,7 +133,8 @@ class S3(DataService):
             object_name = last
 
         logging.info("Bucket name: " + bucket_name)
-        logging.info("Object name: " + object_name)
+        test =   localdir + '/' + object_name.split('/')[0]
+        logging.info("Object name: " + test)
 
         success = False
 
@@ -152,6 +154,12 @@ class S3(DataService):
                     return None
             # Download directory
             else:
+                # Create subfolder where contents will be uploaded, if it doesn't already exist
+                localdir += '/' + object_name.split('/')[0]
+                if not os.path.exists(localdir):
+                    logging.info( "Creating local directory {}''".format(localdir))
+                    os.makedirs(localdir)
+
                 success = self.download_directory(
                     localdir, bucket_name, object_name)
         # Download bucket
@@ -162,7 +170,6 @@ class S3(DataService):
             utils.print_string("All downloads successfull",
                                utils.PrintStyle.SUCCESS)
 
-    @utils.timeit
     def upload(self, localdir, s3_path):
         """
         Upload file or folder to S3
@@ -247,11 +254,12 @@ class S3(DataService):
                         try:
                             # Define object key in such a way that S3
                             # will automatically create required folders
+                            key = localdir.split(SEPARATOR)[-1]
                             if not object_name == '':
-                                key = os.path.join(
+                                key = os.path.join(key,
                                     object_name, subfolder, name)
                             else:
-                                key = os.path.join(subfolder, name)
+                                key = os.path.join(key,subfolder, name)
                             key = key.replace(SEPARATOR, '/')
                             logging.info('Uploading ' + fullname)
                             self.client.upload_file(
@@ -307,7 +315,6 @@ class S3(DataService):
             bucket_name), utils.PrintStyle.SUCCESS)
         return True
 
-    @utils.timeit
     def delete(self, s3_path):
         """
         Delete S3 object

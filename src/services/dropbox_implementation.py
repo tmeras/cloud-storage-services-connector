@@ -23,7 +23,6 @@ class Dropbox(DataService):
     def __init__(self):
         self.client = authenticate()
 
-    @utils.timeit
     def download(self, local_path, dbx_path):
         """
         Download a file or folder from Dropbox
@@ -146,7 +145,6 @@ class Dropbox(DataService):
         utils.print_string("Successfully uploaded '{}'".format(
             fullname), utils.PrintStyle.SUCCESS)
 
-    @utils.timeit
     def upload(self, rootdir, dbx_path):
         """ 
         Upload a file or folder to Dropbox
@@ -175,6 +173,7 @@ class Dropbox(DataService):
         # Upload folder content
         elif os.path.isdir(rootdir):
             logging.info(rootdir + ' is a local directory')
+            dbx_path += rootdir.split(SEPARATOR)[-1]
             for dn, dirs, files in os.walk(rootdir):
                 subfolder = dn[len(rootdir):].strip(SEPARATOR)
                 if subfolder != '':
@@ -215,7 +214,6 @@ class Dropbox(DataService):
 
         utils.print_string('All uploads successfull', utils.PrintStyle.SUCCESS)
 
-    @utils.timeit
     def delete(self, dbx_path):
         dbx_path = dbx_path.replace('\\', '/')
         dbx_path = '/' + dbx_path.lstrip('/')

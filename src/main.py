@@ -166,7 +166,7 @@ def parse_arguments():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.WARNING)
+    logging.basicConfig(level=logging.INFO)
 
     args = parse_arguments()
     logging.debug(args)

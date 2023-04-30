@@ -58,16 +58,3 @@ To install the SDK, type the following command:
 ```
 pip install boto3
 ```
-
-
-## Microsoft Azure Blob
-The link to the Python SDK is:
-https://learn.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python?tabs=managed-identity%2Croles-azure-portal%2Csign-in-azure-cli
-
-Documentation can be found at: https://learn.microsoft.com/en-us/python/api/azure-storage-blob/?view=azure-python
-
-To install the SDK, type the following command:
-
-```
-pip install azure-storage-blob azure-identity
-```

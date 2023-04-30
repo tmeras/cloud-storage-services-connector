@@ -157,11 +157,6 @@ def parse_arguments():
         help="path to S3 content that will be deleted"
     )
 
-    # Create subcommand for Azure Blob storage
-    blob_parser = subparsers.add_parser(
-        "blob", help="use Azure Blob storage services"
-    )
-
     return parser.parse_args()
 
 

@@ -148,7 +148,7 @@ It should be noted that data stored in secondary regions is normally only access
 In general, compared to S3, Blob Storage could prove to be more affordable via LRS (if high availability and durability is not a major concern) and better durability is promised (16 9's vs 11 9's of S3). However blob storage also has drawbacks, as for example redundancy settings are account-wide while S3 allows for even object-level specification, and there is no SLA backing replication speed as in S3 Replication Time Control.
 
 \subsection{Availability}
-With the S3 SLA, a commitment is made by Amazon to maintain a specific uptime percentage for its services every month~\cite{s3sla}. If lower than promised availability for a service is observed during a month (exceptions apply for unusual situations like natural disasters), then customers are entitled to Service Credits which can be applied against future payments towards that service. The percentage of charges for a billing cycle that service credits cover is based on table \ref{S3 SLA}.
+With the S3 SLA, a commitment is made by Amazon to maintain a specific uptime percentage for its services every month~\cite{s3sla}. If lower than promised availability for a service is observed during a month (exceptions apply for unusual situations like natural disasters), then customers are entitled to Service Credits which can be applied against future payments towards that service. The percentage of charges for a billing cycle that service credits cover is based on \autoref{S3 SLA}.
 
 \begin{table}[h]
     \resizebox{\textwidth}{!}{%
@@ -168,7 +168,7 @@ With the S3 SLA, a commitment is made by Amazon to maintain a specific uptime pe
     }\caption{\label{S3 SLA}S3 Availability SLA}
 \end{table}
 
-Blob Storage also provides an availability SLA~\cite{blobsla}, again offering credits as compensation for lower-than-expected uptime.(table \ref{Blob SLA})
+Blob Storage also provides an availability SLA~\cite{blobsla}, again offering credits as compensation for lower-than-expected uptime.(\autoref{Blob SLA})
 \begin{table}[h]
     \resizebox{\textwidth}{!}{%
         \begin{tabular}{clll}
@@ -297,7 +297,7 @@ Azure Blob also provides comparable data protection options: ~\cite{blob_data_pr
 \end{enumerate}
 
 \subsection{Performance}
-Regarding performance, Microsoft has published some performance targets for Blob storage.~\cite{blob_targets} While they are high-end, these targets can be achieved keeping in mind that the observed performance always depends on various factors like workload type, object size and more. Some key performance targets are shown in table \ref{Blob targets}
+Regarding performance, Microsoft has published some performance targets for Blob storage.~\cite{blob_targets} While they are high-end, these targets can be achieved keeping in mind that the observed performance always depends on various factors like workload type, object size and more. Some key performance targets are shown in \autoref{Blob targets}
 
 \begin{table}[h]
     \resizebox{\textwidth}{!}{%
@@ -322,7 +322,7 @@ Amazon hasn't made any performance targets official, however the maximum size of
 The work done in~\cite{s3vsblob_performance} shines more light on the performance of cloud storage solutions including S3, S3 Glacier, Blob Storage, as various generated workloads (differing in file size and number) were used to measure and compare the actual performance of each service during 2013-2014.
 
 \subsubsection{Latency}
-The authors in \cite{s3vsblob_performance} calculated the \ac{rtt} experienced when using cloud storage services, as shown in figure \ref{fig:latency}
+The authors in \cite{s3vsblob_performance} calculated the \ac{rtt} experienced when using cloud storage services, as shown in \autoref{fig:latency}
 \begin{figure} [h]
     \centering
     \includegraphics[scale=0.7]{images/latency}
@@ -333,7 +333,7 @@ The authors in \cite{s3vsblob_performance} calculated the \ac{rtt} experienced w
 It was established from the results that RTTs are stable and nearly identical for S3 and Azure services (in the same regions), and the determining factor was propagation delay (due to distance from data center).
 
 \subsubsection{Throughput}
-Research was also conducted in \cite{s3vsblob_performance} to measure throughput when downloading single files and bundle of files. Results are in figure  \ref{fig:throughput} .
+Research was also conducted in \cite{s3vsblob_performance} to measure throughput when downloading single files and bundle of files. Results are in \autoref{fig:throughput} .
 \begin{figure} [h]
     \centering
     \includegraphics[scale=0.5]{images/throughput}
@@ -350,10 +350,10 @@ Another benchmark in \cite{s3vsblob_performance} was carried out to determine if
     \caption{\label{fig:variation}Performance variation of cloud services}
 \end{figure}
 
-As shown in \ref{fig:variation}, upload speeds remain almost perfectly stable across all providers. Download speeds, on the other hand, vary wildly depending on the service, data center and workload. Glacier speeds remain capped as mentioned earlier, while Azure performs the best (likely due to the small workload size). S3 in Dublin shows the greatest variation, frequently jumping between 20 and 100 Mb/s, due to the great difference in performance capability of the server group that is reached each time (one is limited to 20 Mb/s).
+As shown in \autoref{fig:variation}, upload speeds remain almost perfectly stable across all providers. Download speeds, on the other hand, vary wildly depending on the service, data center and workload. Glacier speeds remain capped as mentioned earlier, while Azure performs the best (likely due to the small workload size). S3 in Dublin shows the greatest variation, frequently jumping between 20 and 100 Mb/s, due to the great difference in performance capability of the server group that is reached each time (one is limited to 20 Mb/s).
 
 \subsubsection{Connection Management and Overhead}
-The way each service manages its connection when uploading multiple files also affects the amount of overhead that is generated each time. Amazon offers the most cleverly implemented services in this regard, since S3 uses two connections, one for user login and another for data transfer, while Glacier uses only a single connection for both (regardless of the number of uploaded files). Azure, however, uses a separate connection for each transferred file, and so it suffers from especially increased overhead when many small files are uploaded. (figure \ref{fig:overhead})
+The way each service manages its connection when uploading multiple files also affects the amount of overhead that is generated each time. Amazon offers the most cleverly implemented services in this regard, since S3 uses two connections, one for user login and another for data transfer, while Glacier uses only a single connection for both (regardless of the number of uploaded files). Azure, however, uses a separate connection for each transferred file, and so it suffers from especially increased overhead when many small files are uploaded. (\autoref{fig:overhead})
 
 \begin{figure} [h]
     \centering
@@ -362,7 +362,7 @@ The way each service manages its connection when uploading multiple files also a
 \end{figure}
 
 \subsection{Pricing}
-Azure Blob and S3 both are based on a "pay-as-you-go" charging model,  and the results for some comparable storage classes are shown below. The prices shown in \ref{tab:object_pricing} are for the US East (N.Virginia) S3 region and East US 2 Blob region. Blob Storage also takes into account the redundancy method used when presenting the prices and, for Blob, the flat structure namespace option was selected~\cite{s3_pricing,blob_pricing}.
+Azure Blob and S3 both are based on a "pay-as-you-go" charging model,  and the results for some comparable storage classes are shown below. The prices shown in \autoref{tab:object_pricing} are for the US East (N.Virginia) S3 region and East US 2 Blob region. Blob Storage also takes into account the redundancy method used when presenting the prices and, for Blob, the flat structure namespace option was selected~\cite{s3_pricing,blob_pricing}.
 
 \begin{table}[!h]
     \resizebox{\textwidth}{!}{%
@@ -402,7 +402,7 @@ Azure Blob and S3 both are based on a "pay-as-you-go" charging model,  and the r
     }\caption{\label{tab:object_pricing}Object Storage Pricing Sample}
 \end{table}
 
-It can be observed from ~\ref{tab:object_pricing} that, in general, S3 and Blob prices are similar, with Blob Cool Tier LRS overall being a bit cheaper than S3-IA, and GRS being the most expensive fo the three. However, this is only a sample, and the cost-efficiency of each service can only be determined after extensive analysis and careful consideration of various factors like the storage classes and redundancy options selected, workloads to be carried out and more.
+It can be observed from ~\autoref{tab:object_pricing} that, in general, S3 and Blob prices are similar, with Blob Cool Tier LRS overall being a bit cheaper than S3-IA, and GRS being the most expensive fo the three. However, this is only a sample, and the cost-efficiency of each service can only be determined after extensive analysis and careful consideration of various factors like the storage classes and redundancy options selected, workloads to be carried out and more.
 
 One interesting discovery was made in~\cite{s3vsblob_performance}, which was that, while S3's expected charged are more or less identical to actual charges, Blob's actual charges in bandwidth and storage are 25\% cheaper than expected.
 
@@ -410,7 +410,7 @@ One interesting discovery was made in~\cite{s3vsblob_performance}, which was tha
 In this section, a comparison will be made between three popular File Storage Services, namely Dropbox, Google Drive and Box.
 
 \subsection{Pricing Plans and Scalability}
-All 3 services offer a variety of pricing plans ~\cite{dropbox,google_drive,box}, and the primary examples of each are summarized in tables  \ref{tab:Dropbox_Pricing}, \ref{tab:Box_Pricing}, and \ref{tab:Drive_Pricing}.
+All 3 services offer a variety of pricing plans ~\cite{dropbox,google_drive,box}, and the primary examples of each are summarized in tables  \autoref{tab:Dropbox_Pricing}, \autoref{tab:Box_Pricing}, and \autoref{tab:Drive_Pricing}.
 
 All 3 providers also offer a free plan with significant limitations, for instance Box's free plan (Individual) includes 10 GB of storage and 1 version per file only, while Drive's personal plan includes 15 GB storage per user while limiting sharing capabilities. Furthermore, all providers unlock more storage and features (especially regarding security and management) as more expensive plans are chosen.
 
@@ -537,7 +537,7 @@ Extensive research into the performance of almost a dozen file storage services 
 Through the results gathered in~\cite{personal1}, it was confirmed that all tested cloud services use HTTPS to encrypt packets (HTTP is used only for Dropbox's notification protocols). Furthermore, to optimize network usage and transfer time, some specific client capabilities are used by all services:
 
 \begin{description}
-    \item[\textbf{Bundling}] involves gathering a batch of files in a bundle before transferring them, with the aim of reducing overhead and latency. From the 3 services discussed in this paper, both Box and Google Drive open several TCP connections during the submission of multiple files (with likely significant overhead) , as shown in  \ref{fig:bundling},indicating that each file is managed separately. Dropbox, on the other hand, uses bundling as it opens only a few TCP connections for multiple files.
+    \item[\textbf{Bundling}] involves gathering a batch of files in a bundle before transferring them, with the aim of reducing overhead and latency. From the 3 services discussed in this paper, both Box and Google Drive open several TCP connections during the submission of multiple files (with likely significant overhead) , as shown in  \autoref{fig:bundling},indicating that each file is managed separately. Dropbox, on the other hand, uses bundling as it opens only a few TCP connections for multiple files.
 
     \begin{figure} [h]
         \centering
@@ -545,7 +545,7 @@ Through the results gathered in~\cite{personal1}, it was confirmed that all test
         \caption{\label{fig:bundling}Bundling capabilities}
     \end{figure}
 
-    \item[\textbf{Chunking}] means transmitting large files in chunks, rather than in one transmission, simplifying error recovery and making partial submissions easier to implement. The TCP connections illustrated in \ref{fig:chunking} reveal the chunking strategies used by Google Drive and Dropbox. Specifically, the former uses 8 MB chunks and the latter 4 MB chunks and, surprisingly, chunking is only used by Google Drive when downloading files. Additionally, while Box makes use of chunking~\cite{box_chunked}, the results on it from this experiment are not displayed.
+    \item[\textbf{Chunking}] means transmitting large files in chunks, rather than in one transmission, simplifying error recovery and making partial submissions easier to implement. The TCP connections illustrated in \autoref{fig:chunking} reveal the chunking strategies used by Google Drive and Dropbox. Specifically, the former uses 8 MB chunks and the latter 4 MB chunks and, surprisingly, chunking is only used by Google Drive when downloading files. Additionally, while Box makes use of chunking~\cite{box_chunked}, the results on it from this experiment are not displayed.
 
     \begin{figure} [h]
         \centering
@@ -557,7 +557,7 @@ Through the results gathered in~\cite{personal1}, it was confirmed that all test
 
     \item[\textbf{Client-Side Deduplication}] can save upload capacity by identifying if the file already exists in the server. This identification is accomplished by first sending a file digest (calculated using the file's content) to the server, which checks if the file already exists to skip the upload.  Only Dropbox has deduplication capabilities, and copies of a file are identified even after they are deleted and subsequently restored.
 
-    \item[\textbf{Delta Encoding}] allows the transmission of only the modified parts of a file, by calculating the differences between file versions, making it an attractive feature when files are frequently modified-e.g., for collaboration.  In figure  \ref{fig:delta encoding}, the effects of delta encoding when content is appended or inserted at random positions are shown, and it becomes obvious that only Dropbox uses delta encoding and, most of the time, only the modified content is uploaded. However, due to chunking, when a file is larger than the 4 MB chunk size, inserting content could then affect more than one chunk and thus lead to more data being transmitted.
+    \item[\textbf{Delta Encoding}] allows the transmission of only the modified parts of a file, by calculating the differences between file versions, making it an attractive feature when files are frequently modified-e.g., for collaboration.  In \autoref{fig:delta encoding}, the effects of delta encoding when content is appended or inserted at random positions are shown, and it becomes obvious that only Dropbox uses delta encoding and, most of the time, only the modified content is uploaded. However, due to chunking, when a file is larger than the 4 MB chunk size, inserting content could then affect more than one chunk and thus lead to more data being transmitted.
 
         \begin{figure} [h]
         \centering
@@ -580,7 +580,7 @@ When it comes to data center placements, Box allows users to store their data in
 The work carried out in~\cite{personal1} lead to the following conclusions:
 
 \begin{description}
-    \item[\textbf{Synchronization Start Up}], or the amount of time required before synchronization starts, is depicted in figure \ref{fig:synchronization start up}, where the empirical \ac{cdf} is obtained by considering 20 repetitions. Dropbox is the fastest for single small files, but it does experience delays when synchronizing multiple files due to bundling, in which case there is no clear winner. Google Drive and Box CDFs, however, do present knees in this and other metric (as shown later), likely due to variability in traffic shaping or performance of their servers.
+    \item[\textbf{Synchronization Start Up}], or the amount of time required before synchronization starts, is depicted in \autoref{fig:synchronization start up}, where the empirical \ac{cdf} is obtained by considering 20 repetitions. Dropbox is the fastest for single small files, but it does experience delays when synchronizing multiple files due to bundling, in which case there is no clear winner. Google Drive and Box CDFs, however, do present knees in this and other metric (as shown later), likely due to variability in traffic shaping or performance of their servers.
 
     \begin{figure} [h]
         \centering
@@ -588,7 +588,7 @@ The work carried out in~\cite{personal1} lead to the following conclusions:
         \caption{\label{fig:synchronization start up}Start up delays}
     \end{figure}
 
-    \item[\textbf{Upload and Download Duration}] for single-file workloads across all 3 services are determined primarily by data center placements and system parameters. When multiple files are uploaded, though, each client's capabilities and other factors are much more significant. Once again, Dropbox wins both workloads involving multiple files thanks to its bundling implementation by a huge margin in one case, with the trade-off of having higher start up delay as mentioned earlier. The next best performer is Google Drive, with mostly comparable results to that of Dropbox. Box, however, is by far the worst of the 3, with workload 5 taking and absurd amount of time by comparison, leaving lots of room for improvement. All results are visible in figure  \ref{fig:upload}
+    \item[\textbf{Upload and Download Duration}] for single-file workloads across all 3 services are determined primarily by data center placements and system parameters. When multiple files are uploaded, though, each client's capabilities and other factors are much more significant. Once again, Dropbox wins both workloads involving multiple files thanks to its bundling implementation by a huge margin in one case, with the trade-off of having higher start up delay as mentioned earlier. The next best performer is Google Drive, with mostly comparable results to that of Dropbox. Box, however, is by far the worst of the 3, with workload 5 taking and absurd amount of time by comparison, leaving lots of room for improvement. All results are visible in \autoref{fig:upload}
 
     \begin{figure} [h]
         \centering
@@ -596,7 +596,7 @@ The work carried out in~\cite{personal1} lead to the following conclusions:
         \caption{\label{fig:upload}Upload times}
     \end{figure}
 
-    \item[\textbf{Propagation Delay}], computed as the difference between the download and upload starting times,  does not exhibit much variation, with all services waiting roughly the same time before starting the download, with the exception of workload 3 as shown in figure \ref{fig:propagation delay}, where Box again falls significantly behind the other two services.
+    \item[\textbf{Propagation Delay}], computed as the difference between the download and upload starting times,  does not exhibit much variation, with all services waiting roughly the same time before starting the download, with the exception of workload 3 as shown in \autoref{fig:propagation delay}, where Box again falls significantly behind the other two services.
 
     \begin{figure} [h]
         \centering
@@ -604,7 +604,7 @@ The work carried out in~\cite{personal1} lead to the following conclusions:
         \caption{\label{fig:propagation delay}Propagation delays}
     \end{figure}
 
-    \item[\textbf{Traffic Overhead}] is calculated by dividing total exchanged traffic over twice the total file size. For synchronizing single small files, the total overhead is significant for all services, even Dropbox, probably due to implementing its advanced capabilities. This is one case, however, where Box is the winner, likely for the opposite reason, that is, it is lacking most advanced capabilities. In addition, as large files are submitted, the overhead decreased dramatically, though Dropbox still exhibits around a significant 7\% overhead. The situation changes, however, when many small files are synchronized, in which case bundling plays an essential role. Since Dropbox is the only service that bundles files, the total overhead it produces is significantly less than the other two services, which have approximately the same overhead even though Google Drive uses compression (see figure \ref{fig:traffic overhead}). Indeed, it is the lack of bundling, and hence the need for several TCP/SSL connections, that introduces this additional overhead.
+    \item[\textbf{Traffic Overhead}] is calculated by dividing total exchanged traffic over twice the total file size. For synchronizing single small files, the total overhead is significant for all services, even Dropbox, probably due to implementing its advanced capabilities. This is one case, however, where Box is the winner, likely for the opposite reason, that is, it is lacking most advanced capabilities. In addition, as large files are submitted, the overhead decreased dramatically, though Dropbox still exhibits around a significant 7\% overhead. The situation changes, however, when many small files are synchronized, in which case bundling plays an essential role. Since Dropbox is the only service that bundles files, the total overhead it produces is significantly less than the other two services, which have approximately the same overhead even though Google Drive uses compression (see \autoref{fig:traffic overhead}). Indeed, it is the lack of bundling, and hence the need for several TCP/SSL connections, that introduces this additional overhead.
 
     \begin{figure} [h]
         \centering

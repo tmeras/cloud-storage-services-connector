@@ -3,22 +3,22 @@
 \section{Design Model}
 
 \begin{figure} [h]
-	\centering
-	\includegraphics[scale=0.55]{images/design_diagram}
-	\caption{\label{fig:design_model}Design Model}
+    \centering
+    \includegraphics[scale=0.55]{images/design_diagram}
+    \caption{\label{fig:design_model}Design Model}
 \end{figure}
 
 \section{Rationale for Design Model}
 The model depicted in figure \ref{fig:design_model} provides a high-level overview of the design of our library. As shown in the model, the user interacts with our library to make use of any of the supported cloud storage services (Dropbox, Box, Google Drive, Amazon S3). To interact with the library, the user needs to provide the following command-line arguments, regardless of the desired service:
 
 \begin{enumerate}
-	\item \textbf{Service Name}: The cloud storage service that should be used (e.g., Dropbox)
-	
-	\item \textbf{Operation}: The type of operation that should be performed (e.g., Download)
-	
-	\item \textbf{Remote Path}: The path which points to a file or folder stored on the specified service (e.g. download source)
-	
-	\item \textbf{Local Path} (when applicable): The path which points to a file or folder stored locally on the user's machine (e.g. download destination)
+    \item \textbf{Service Name}: The cloud storage service that should be used (e.g., Dropbox)
+
+    \item \textbf{Operation}: The type of operation that should be performed (e.g., Download)
+
+    \item \textbf{Remote Path}: The path which points to a file or folder stored on the specified service (e.g. download source)
+
+    \item \textbf{Local Path} (when applicable): The path which points to a file or folder stored locally on the user's machine (e.g. download destination)
 \end{enumerate}
 
 Thus, through our library, the user has access to a single interface for accessing many different cloud storage providers. The library also hides the implementation details and complexities regarding authentication and interaction with the various cloud storage services. Specifically, the library uses the \ac{sdk}s provided by each storage provider both to authenticate the user and to make API calls and communicate with the storage back end of each service. For authentication, the library ensures to store access tokens for as long as they are valid, so that authentication is done on behalf of the user. Consequently, the user is only asked to enter credentials when new tokens need to be obtained. The library also logs events, and the user can configure the level of visibility they have over the logged events, according to their severity. Furthermore, the user-provided command-line arguments are automatically processed by the library to make them compatible with the SDK of the service which the user wants to access. Overall, little end-user interaction is involved when using the library, meaning that the user could be used by a physical person as well as a system or another library.
@@ -32,35 +32,35 @@ Traditionally, to access restricted resources hosted on the server, a client app
 OAuth resolves these problems by not relying on user credentials to gain access to protected resources, but instead by having the client obtain a string, called an access token, from an authorization server (might be the resource server or another server).  The token can also specify various attributes like access scope and duration. As a result, an additional authorization layer is added, while the client is decoupled from the resource owner, since the latter's credentials need not be shared. The OAuth flow, which is depicted in figure \ref{fig:oauth_flow}, can be summarized as follows ~\cite{oauth}:
 
 \begin{enumerate} [(A.)]
-	\item The client makes an authorization request to either the resource owner  (as shown) or, preferably, to the intermediary authorization server. 
-	
-	\item The resource owner returns an authorization grant, a credential which represents their authorization, using one of the grant types that are discussed later in this section. 
-	
-	\item The client authenticates with the authorization server and presents the grant, in order to request an access token.
-	
-	\item An access token is issued to the client, if validation of the authorization grant is successful. Additionally, an optional refresh token can also be returned here, which allows the client to later obtain a new access token when the previous one is invalidated or expires.
-	
-	\item  The client authenticates with the resource server by presenting the token and requests a restricted resource.
-	
-	\item If the access token is valid, the resource server returns the requested resource.
+    \item The client makes an authorization request to either the resource owner  (as shown) or, preferably, to the intermediary authorization server.
+
+    \item The resource owner returns an authorization grant, a credential which represents their authorization, using one of the grant types that are discussed later in this section.
+
+    \item The client authenticates with the authorization server and presents the grant, in order to request an access token.
+
+    \item An access token is issued to the client, if validation of the authorization grant is successful. Additionally, an optional refresh token can also be returned here, which allows the client to later obtain a new access token when the previous one is invalidated or expires.
+
+    \item  The client authenticates with the resource server by presenting the token and requests a restricted resource.
+
+    \item If the access token is valid, the resource server returns the requested resource.
 \end{enumerate}
 
 \begin{figure} [h]
-	\centering
-	\includegraphics[scale=0.7]{images/oauth_flow}
-	\caption{\label{fig:oauth_flow}Abstract OAuth Flow}
+    \centering
+    \includegraphics[scale=0.7]{images/oauth_flow}
+    \caption{\label{fig:oauth_flow}Abstract OAuth Flow}
 \end{figure}
 
 The available OAuth grant types are ~\cite{oauth, oauth_grants}:
 
 \begin{itemize}
-	\item [--]The \textit{Authorization Code} grant type involves an intermediary authorization server to which the user is first redirected by the client. Then, the authentication server authenticates the user and obtains authorization. This is the preferred grant type, as the user's credentials aren't shared with the client and the access token is directly transmitted to the client, minimizing exposure. 
-	
-	\item [--] The \textit{\ac{pkce}} extends the Authorization Code grant type, by making the client use a secret when exchanging the authorization code, after creating it during the authorization request. Because the token request now depends on the secret, intercepting the authorization code is not harmful and so, PCKE helps prevent code injection attacks and \ac{csrf}.
-	
-	\item [--] \textit{Client Credentials} can be used as an authorization grant usually when the access scope is limited to the client's own resources. 
-	
-	\item [--] The \textit{Device Authorization Grant} is especially applicable when devices that don't have convenient input capability or a web browser are involved. Example devices include Apple TVs and printers. These devices instruct the user to visit a particular web-page on another device so that authorization can be completed. While the user is busy with the authorization flow, the original device starts requesting the access from a specific endpoint.
+    \item [--]The \textit{Authorization Code} grant type involves an intermediary authorization server to which the user is first redirected by the client. Then, the authentication server authenticates the user and obtains authorization. This is the preferred grant type, as the user's credentials aren't shared with the client and the access token is directly transmitted to the client, minimizing exposure.
+
+    \item [--] The \textit{\ac{pkce}} extends the Authorization Code grant type, by making the client use a secret when exchanging the authorization code, after creating it during the authorization request. Because the token request now depends on the secret, intercepting the authorization code is not harmful and so, PCKE helps prevent code injection attacks and \ac{csrf}.
+
+    \item [--] \textit{Client Credentials} can be used as an authorization grant usually when the access scope is limited to the client's own resources.
+
+    \item [--] The \textit{Device Authorization Grant} is especially applicable when devices that don't have convenient input capability or a web browser are involved. Example devices include Apple TVs and printers. These devices instruct the user to visit a particular web-page on another device so that authorization can be completed. While the user is busy with the authorization flow, the original device starts requesting the access from a specific endpoint.
 \end{itemize}
 
 For our implementation, only one cloud provider \ac{sdk} didn't directly integrate with OAuth2 for authentication, namely Amazon's Boto3.

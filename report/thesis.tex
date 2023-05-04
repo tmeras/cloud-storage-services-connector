@@ -4,7 +4,7 @@
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
-\usepackage[draft,inline,nomargin,index]{fixme}
+\usepackage[final,inline,nomargin,index]{fixme}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{geometry}
@@ -21,6 +21,19 @@
 \fxsetup{theme=color,mode=multiuser}%,inline=false}
 \FXRegisterAuthor{s}{savvas}{\color{cyan}Savvas}
 \FXRegisterAuthor{t}{theo}{\color{red}Theo}
+
+\newcommand{\Autoref}[1]{%
+    \begingroup%
+    \def\chapterautorefname{Chapter}%
+    \def\sectionautorefname{Section}%
+    \def\subsectionautorefname{Subsection}%
+    \def\subsubsectionautorefname{Subsubsection}%
+    \def\paragraphautorefname{Paragraph}%
+    \def\tableautorefname{Table}%
+    \def\equationautorefname{Equation}%
+    \autoref{#1}%
+    \endgroup%
+}
 
 
 %set the spacing to 1.5 lines

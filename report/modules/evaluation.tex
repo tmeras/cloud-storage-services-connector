@@ -1,4 +1,4 @@
-\chapter{Evaluation}
+\chapter{Evaluation}\label{ch:evaluation}
 
 \section{Evaluation Setup}
 In order to evaluate the performance of our library, we measured the time required to upload, download and delete files which ranged from 1MB to 1GB in size. We executed all 3 operations on each file size, for each service (Dropbox, Box, Google Drive, S3), 5 times, and then calculated and recorded the mean duration. The specifications of the computer and network used to make the API calls and measure execution time are detailed in table \ref{tab:pc_specs}. Furthermore, chunked uploads were used across all services, with a chunk size of 32MB. The only exception to this was Box, as it automatically determined the optimal chunk size which was, however, 32MB for larger files ($>$100MB). Finally, no warm-up time was used for this evaluation.

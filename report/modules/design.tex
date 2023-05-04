@@ -4,24 +4,24 @@
 
 \begin{figure} [h]
     \centering
-    \includegraphics[scale=0.55]{images/design_diagram}
+    \includegraphics[scale=0.50]{images/design_diagram}
     \caption{\label{fig:design_model}Design Model}
 \end{figure}
 
 \section{Rationale for Design Model}
-The model depicted in figure \ref{fig:design_model} provides a high-level overview of the design of our library. As shown in the model, the user interacts with our library to make use of any of the supported cloud storage services (Dropbox, Box, Google Drive, Amazon S3). To interact with the library, the user needs to provide the following command-line arguments, regardless of the desired service:
+The model depicted in \autoref{fig:design_model} provides a high-level overview of the design of our library. As shown in the model, the user interacts with our library to make use of the supported cloud storage services (Dropbox, Box, Google Drive, Amazon S3). To interact with the library, the user needs to provide the following command-line arguments, regardless of the desired service:
 
 \begin{enumerate}
     \item \textbf{Service Name}: The cloud storage service that should be used (e.g., Dropbox)
 
     \item \textbf{Operation}: The type of operation that should be performed (e.g., Download)
 
-    \item \textbf{Remote Path}: The path which points to a file or folder stored on the specified service (e.g. download source)
+    \item \textbf{Remote Path}: The path which points to a file or folder stored on the specified service (e.g., download source)
 
-    \item \textbf{Local Path} (when applicable): The path which points to a file or folder stored locally on the user's machine (e.g. download destination)
+    \item \textbf{Local Path} (when applicable): The path which points to a file or folder stored locally on the user's machine (e.g., download destination)
 \end{enumerate}
 
-Thus, through our library, the user has access to a single interface for accessing many different cloud storage providers. The library also hides the implementation details and complexities regarding authentication and interaction with the various cloud storage services. Specifically, the library uses the \ac{sdk}s provided by each storage provider both to authenticate the user and to make API calls and communicate with the storage back end of each service. For authentication, the library ensures to store access tokens for as long as they are valid, so that authentication is done on behalf of the user. Consequently, the user is only asked to enter credentials when new tokens need to be obtained. The library also logs events, and the user can configure the level of visibility they have over the logged events, according to their severity. Furthermore, the user-provided command-line arguments are automatically processed by the library to make them compatible with the SDK of the service which the user wants to access. Overall, little end-user interaction is involved when using the library, meaning that the user could be used by a physical person as well as a system or another library.
+Thus, through our library, the user has access to a single interface for accessing many different cloud storage providers. The library also hides the implementation details and complexities regarding authentication and interaction with the various cloud storage services. Specifically, the library uses the \acp{sdk} provided by each storage provider both to authenticate the user and to make API calls and communicate with the storage back end of each service. For authentication, the library ensures to store access tokens for as long as they are valid, so that authentication is done on behalf of the user. Consequently, the user is only asked to enter credentials when new tokens need to be obtained. The library also logs events, and the user can configure the level of visibility they have over the logged events, according to their severity. Furthermore, the user-provided command-line arguments are automatically processed by the library to make them compatible with the SDK of the service which the user wants to access. Overall, little end-user interaction is involved when using the library, meaning that the user could be used by a physical person as well as a system or another library.
 
 
 \section{OAuth}
@@ -29,7 +29,7 @@ For each cloud service provider that supported it, we made use of OAuth2 for aut
 
 Traditionally, to access restricted resources hosted on the server, a client application uses the user's own credentials  to make the request. This means that the user is required to share their private credentials with the application, which is a source of many issues and limitations. One example is that the third-party clients need to store credentials, typically in vulnerable plain-text form,  in order to use them again in the future. If the application is then compromised at any point, the attacker can easily access the stored user credentials and any resources they protect. Another disadvantage is that with the direct use of credentials, users cannot limit what applications can access and for how long, and revoking access to a third party also revokes access to all other parties, since the password needs to be changed. Finally, this scheme requires resource servers themselves to have authentication capabilities ~\cite{oauth}.
 
-OAuth resolves these problems by not relying on user credentials to gain access to protected resources, but instead by having the client obtain a string, called an access token, from an authorization server (might be the resource server or another server).  The token can also specify various attributes like access scope and duration. As a result, an additional authorization layer is added, while the client is decoupled from the resource owner, since the latter's credentials need not be shared. The OAuth flow, which is depicted in figure \ref{fig:oauth_flow}, can be summarized as follows ~\cite{oauth}:
+OAuth resolves these problems by not relying on user credentials to gain access to protected resources, but instead by having the client obtain a string, called an access token, from an authorization server (might be the resource server or another server).  The token can also specify various attributes like access scope and duration. As a result, an additional authorization layer is added, while the client is decoupled from the resource owner, since the latter's credentials need not be shared. The OAuth flow, which is depicted in \autoref{fig:oauth_flow}, can be summarized as follows~\cite{oauth}:
 
 \begin{enumerate} [(A.)]
     \item The client makes an authorization request to either the resource owner  (as shown) or, preferably, to the intermediary authorization server.

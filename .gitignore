@@ -143,3 +143,5 @@ report/thesis.synctex.gz
 report/thesis.pdf
 
 src/test.py
+report/thesis.lof
+report/thesis.lot

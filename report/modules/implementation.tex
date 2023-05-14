@@ -1,26 +1,15 @@
 \chapter{Implementation}\label{ch:implementation}
 
 \section{Introduction}
-For this project, we opted to use Python 3 (specific version shown in \autoref{tab:Python_Version}) and applied object-oriented programming principles to modularize our implementation of our library, which provides a single interface for accessing the following cloud storage services: Dropbox, Box, Google Drive and Amazon S3.
+For this project, we opted to use Python (version 3.11.1) and applied object-oriented programming principles to modularize our implementation of our library, which provides a single interface for accessing the following cloud storage services: Dropbox, Box, Google Drive and Amazon S3.
+
+We used the official \acp{sdk} offered by each service provider (details shown in \autoref{tab:SDKs}). To facilitate implementation of a common interface across all providers, we used an abstract class which includes methods for each major functionality, namely the upload, download and deletion of items. We then captured every provider in their own class, extending the abstract class for each one. When running our application, the user needs to provide command-line arguments which specify: 1) the cloud service they want to access, 2) the desired functionality (upload/download/delete), 3) a remote path (absolute path of an item stored in the cloud) and, sometimes, 4) a local path (absolute path of a locally stored item). To ensure enhanced reliability and to allow for better monitoring of progress, we used chunked uploading for  files larger than 100MB.
 
 
 \begin{table}[!h]
     \centering
-    \begin{tabular}{|l|l|}
-        \hline
-        \rowcolor[HTML]{EFEFEF}
-        \textbf{Name} & \textbf{Version} \\ \hline
-        Python        & 3.11.1           \\ \hline
-    \end{tabular}
-    \caption{Python Version Used}
-    \label{tab:Python_Version}
-\end{table}
-
-We used the official \acp{sdk} offered by each service provider (details shown in \autoref{tab:SDKs}). To facilitate implementation of a common interface across all providers, we used an abstract class which includes methods for each major functionality, namely the upload, download and deletion of items. We then captured every provider in their own class, extending the abstract class for each one. When running our application, the user needs to provide command-line arguments which specify the cloud service they want to access, the desired functionality (upload/download/delete), a remote path (absolute path of an item stored in the cloud) and, sometimes, a local path (absolute path of a locally stored item). To ensure enhanced reliability and to allow for better monitoring of progress, we used chunked uploading for larger files.
-
-
-\begin{table}[!h]
-    \centering
+     \caption{SDKs Used} 
+      \label{tab:SDKs}
     \begin{tabular}{|l|l|l|}
         \hline
         \rowcolor[HTML]{EFEFEF}
@@ -32,8 +21,7 @@ We used the official \acp{sdk} offered by each service provider (details shown i
         Google Drive           & Google API Client & 2.78.0  \\ \hline
         Amazon S3              & Boto3             & 1.26.30 \\ \hline
     \end{tabular}
-    \caption{SDKs Used}
-    \label{tab:SDKs}
+
 \end{table}
 
 
@@ -41,26 +29,26 @@ Additionally, to track events that occur during program execution, we used Pytho
 
 \begin{table}[!h]
     \centering
+    \caption{Logging Event Levels}
+    \label{tab:Logging_Levels}
     \begin{tabular}{|l|l|}
         \hline
         \rowcolor[HTML]{EFEFEF}
         \textbf{Level}    & \textbf{Used for}                \\ \hline
-        \textit{DEBUG}    & Information with great detail, typically ro diagnose problems                \\ \hline
+        \textit{DEBUG}    & Information with great detail, typically to diagnose problems                \\ \hline
         \textit{INFO}     & Confirmation of normal operation \\ \hline
         \textit{WARNING}  & Unexpected events or problems that will soon occur                           \\ \hline
         \textit{ERROR}    & Serious problems that lead to the software not performing some functionality \\ \hline
         \textit{CRITICAL} & Serious errors which may lead to interruption of software execution          \\ \hline
     \end{tabular}
-    \caption{Loging Event Levels}
-    \label{tab:Logging_Levels}
 \end{table}
 
-Finally, our library is cross-platform compatible, working well across Windows 10, macOS and Linux, and all software that were used or accounts that were created for the purposes of this project were free of charge.
+Finally, our library is cross-platform compatible, working well across Windows 10, macOS and Linux, as it takes into account the default file separator of the OS that is running the library. All software that were used or accounts that were created for the purposes of this project were free of charge.
 
 \section{Dropbox Implementation}
 The Dropbox Python SDK provided functionality for all major Dropbox features including the creation and management (uploading, rename, requesting, versioning, tagging etc.) of files and folders, Dropbox Papers, shared links and shared folders, and the management of both users and teams~\cite{dropbox_docs}.
 
-Regarding authentication, Dropbox uses OAuth2 and allows for scope configuration, based on what the application needs to access . The SDK can handle the entire OAuth flow on behalf of the application, greatly simplifying the process, and even provides a variation of this flow that does not redirect to web page in the end, which is ideal for our implementation.  We used a short-lived access token along with a refresh token, and enable \ac{pkce} for increased security, as is recommended for desktop apps~\cite{dropbox_oauth}.
+Regarding authentication, Dropbox uses OAuth2 and allows for scope configuration, based on what the application needs to access . The SDK can handle the entire OAuth flow on behalf of the application, greatly simplifying the process, and even provides a variation of this flow that does not redirect to a web page in the end, which is ideal for our implementation.  We used a short-lived access token along with a refresh token, and enable \ac{pkce} for increased security, as is recommended for desktop apps~\cite{dropbox_oauth}.
 
 The SDK uses absolute paths to specify Dropbox items, which made it very convenient to work with as most of the other services we implemented require to first find the item (or its parent) and then get the item id or another unique field. Some notable aspects of the SDK when it came to the three major functions we implemented are: ~\cite{dropbox_docs}
 
@@ -76,7 +64,7 @@ The SDK uses absolute paths to specify Dropbox items, which made it very conveni
 \section{Box Implementation}
 The Python SDK offered by Box facilitates file and folder manipulation, file requests, versioning and classification, task definition, user and group management, and more~\cite{box_docs}.
 
-For authentication, Box provides a variety of options, namely using OAuth2, \ac{jwt}, a Client Credentials Grant or an App Token. From these, however, only OAuth2 with scope-based access control was valid for our case, as the rest involved server-side authentication and were more suited for applications that store data within their own Box account, rather than a user's account.  The Box SDK takes care of most of the OAuth2 flow, but does not provide a variation not involving a redirect, so we had to set up a local server which listens to a local port where the user will be redirected. At the end of the flow, an access token and a refresh token is obtained and stored~\cite{box_auth}.
+For authentication, Box provides a variety of options, namely using OAuth, \ac{jwt}, a Client Credentials Grant or an App Token. From these, however, only OAuth2 with scope-based access control was valid for our case, as the rest involved server-side authentication and were more suited for applications that store data within their own Box account, rather than a user's account.  The Box SDK takes care of most of the OAuth2 flow, but does not provide a variation not involving a redirect, so we had to set up a local server which listens to a local port where the user will be redirected. At the end of the flow, an access token and a refresh token are obtained and stored~\cite{box_auth}.
 
 To specify an item on Box, the SDK does not use an absolute path, but instead requires the item's id. This means that, given the absolute path by the user, we needed to traverse the directory structure manually, ensuring that the entire path is valid (i.e., all intermediary folders and the item at the end exist), before finally retrieving the id of the item. Regarding the major functionalities we implemented: ~\cite{box_docs}
 
@@ -109,7 +97,7 @@ The Google Drive API client also requires the id of a file or folder to perform 
 \section{Amazon S3 Implementation}
 Boto3, the Python SDK for \ac{aws},  can be used to manage all versions of buckets and objects, assign \ac{acl}, labels, bucket policies and lifecycles and more, providing access to every major S3 functionality~\cite{s3_docs}.
 
-Amazon recommends using \ac{iam} identity center authentication to manage access to S3 and other AWS services. This process involves creating an AWS Organization and an IAM user to whom you assign least-privilege permissions, so that they are able to programatically access S3 resources. Then, every time Boto3 needs to access S3 resources, a new IAM Identity Center session is created using the user's credentials, and an access and refresh token is obtained. These tokens are then used by the SDK to initiate a permission set session (IAM session), hence gaining the necessary credentials for AWS access (permission set credentials) by assuming an IAM role. There also exist alternative methods for authentication, such as using IAM role credentials (short-term) or IAM user credentials (long term). However, Amazon advises against these and other methods, as they are not as secure or convenient, and so we opted to go with IAM identity center authentication~\cite{s3_auth}.
+Amazon recommends using \ac{iam} identity center authentication to manage access to S3 and other AWS services. This process involves creating an AWS Organization and an IAM user to whom you assign least-privilege permissions, so that they are able to programmatically access S3 resources. Then, every time Boto3 needs to access S3 resources, a new IAM Identity Center session is created using the user's credentials, and an access and refresh token is obtained. These tokens are then used by the SDK to initiate a permission set session (IAM session), hence gaining the necessary credentials for AWS access (permission set credentials) by assuming an IAM role. There also exist alternative methods for authentication, such as using IAM role credentials (short-term) or IAM user credentials (long term). However, Amazon advises against these and other methods, as they are not as secure or convenient, and so we opted to go with IAM identity center authentication~\cite{s3_auth}.
 
 To perform S3 operations, Boto3 requires a bucket name and (sometimes) the object key. So, to ensure consistency among all services implemented, we have the user enter the S3 URL of an object (e.g., bucket-name/folder-name/object-name). From the URL, the bucket name can be easily extracted, and then the object key is simply what remains from the URL. So, it is not required to traverse the file structure to find the object specified by the user, as the key itself is sufficient. Regarding the upload, download and deletion of buckets and objects: ~\cite{s3_docs}
 

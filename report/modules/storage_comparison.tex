@@ -184,15 +184,28 @@ Blob Storage also provides an availability SLA~\cite{blobsla}, again offering cr
 S3 and Blob Storage both follow strict security standards and they offer lots of support for access control and encryption.
 
 \subsubsection{Data Handling}
-For securing \textbf{data in transit}, Amazon recommends using HTTPS (TLS) to prevent eavesdropping , man-in-the-middle and other attacks. Conditions can be set on bucket policies so that only encrypted connections (over HTTPS) are allowed, and a rule can be used to check that all buckets require \ac{ssl} to be used by requests. Client-side encryption is also allowed, which can be achieved in one of two ways: ~\cite{s3securitypractices,s3clientside,s3vsblobsecurity}
+For securing \textbf{data in transit}, Amazon recommends using HTTPS (TLS) to prevent eavesdropping , man-in-the-middle and other attacks. Conditions can be set on bucket policies so that only encrypted connections (over HTTPS) are allowed, and a rule can be used to check that all buckets require \ac{ssl} to be used by requests. Client-side encryption is also supported via the Amazon S3 Encryption Client, which applies envelope encryption and works as follows when uploading objects:
 
 \begin{enumerate}
-    \item Using a AWS \ac{kms} key ID, clients can request a unique data key to encrypt an object before uploading it. AWS KMS then sends a plaintext version of the key and its cipher blob which will be included in the object metadata. To download an object, the client downloads the cipher blob and the encrypted object, and then sends the blob to AWS KMS to get the plaintext data key for decryption.
-
-    \item Clients can also generate, use and store their own encryption keys (called root keys), which will be provided to the S3 encryption client to generate and encrypt a one-time symmetric encryption key (data key) that will encrypt the uploaded object. Object metadata is used to determine the root key that will decrypt the data key for a downloaded object. So, it is up to the client here to manage the keys and encryption process, but they can decide what root keys to use (e.g. symmetric), the algorithms etc.
+	\item The user specifies a wrapping wrapping key (key-encryption key), which can be a symmetric AWS \ac{kms} key, a raw \ac{aes-gcm} key, or a raw \ac{rsa} key.
+	
+	\item The client generates a plaintext data key and a copy of that key encrypted by the wrapping key. 
+	
+	\item The plaintext data key is used to encrypt the object, and is then discarded by the client
+	
+	\item The client uploads the encrypted data key and the encrypted object to Amazon S3
 \end{enumerate}
 
-In similar fashion, Blob Storage has the option of requiring API calls to be made over HTTPS and clients can even enforce a minimum TLS version for incoming requests, enhancing overall security. Furthermore, client-side encryption can also be used, which works similarly as it does in S3, the main difference being that encryption keys can be stored either locally or on the Azure Key Vault, which is Azure's personal key management solution.~\cite{blob_minimum_tls,blob_clientside,azure_vault,blob_secure_transfer}
+This process is also shown in figure \autoref{fig:s3_client_side_encryption}. When retrieving the object, the client decrypts the encrypted data key with the user-provided wrapping key, and uses the resulting data key to decrypt the object.
+
+\begin{figure} [h]
+	\centering
+	\includegraphics[scale=0.6]{images/s3_client_side_encryption}
+	\caption{\label{fig:s3_client_side_encryption}S3 Client Side Encryption}
+\end{figure}
+
+In similar fashion, Blob Storage has the option of requiring API calls to be made over HTTPS and clients can even enforce a minimum TLS version for incoming requests, enhancing overall security. Furthermore, client-side encryption can also be used which, like in S3, also involves envelope encryption.~\cite{blob_minimum_tls,blob_clientside,azure_vault,blob_secure_transfer}
+
 
 \textbf{Data at rest} can be protected in S3 using client-side encryption (as described earlier) and server-side encryption, and there are three mutually-exclusive options for the latter: ~\cite{s3serverside}
 

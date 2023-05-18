@@ -140,7 +140,7 @@ It should be noted that data stored in secondary regions is normally only access
 \subsection{Availability}
 With the S3 SLA, a commitment is made by Amazon to maintain a specific uptime percentage for its services every month~\cite{s3sla}. If lower than promised availability for a service is observed during a month (exceptions apply for unusual situations like natural disasters), then customers are entitled to Service Credits which can be applied against future payments towards that service. The percentage of charges for a billing cycle that service credits cover is based on \autoref{S3 SLA}.
 
-\begin{table}[h]
+\begin{table}[]
 	\centering
 	\caption{S3 Availability SLA}
 	\label{S3 SLA}
@@ -157,7 +157,7 @@ With the S3 SLA, a commitment is made by Amazon to maintain a specific uptime pe
 \end{table}
 
 Blob Storage also provides an availability SLA~\cite{blobsla}, again offering credits as compensation for lower-than-expected uptime.(\autoref{Blob SLA})
-\begin{table}[h]
+\begin{table}[]
 	\centering
 	\caption{Blob Storage Availability SLA}
 	\label{Blob SLA}
@@ -187,7 +187,7 @@ S3 and Blob Storage both follow strict security standards and they offer lots of
 For securing \textbf{data in transit}, Amazon recommends using HTTPS (TLS) to prevent eavesdropping , man-in-the-middle and other attacks. Conditions can be set on bucket policies so that only encrypted connections (over HTTPS) are allowed, and a rule can be used to check that all buckets require \ac{ssl} to be used by requests. Client-side encryption is also supported via the Amazon S3 Encryption Client, which applies envelope encryption and works as follows when uploading objects:
 
 \begin{enumerate}
-	\item The user specifies a wrapping wrapping key (key-encryption key), which can be a symmetric AWS \ac{kms} key, a raw \ac{aes-gcm} key, or a raw \ac{rsa} key.
+	\item The user specifies a wrapping key (key-encryption key), which can be a symmetric AWS \ac{kms} key, a raw \ac{aes-gcm} key, or a raw \ac{rsa} key.
 	
 	\item The client generates a plaintext data key and a copy of that key encrypted by the wrapping key. 
 	
@@ -354,6 +354,7 @@ The way each service manages its connection when uploading multiple files also a
 Azure Blob and S3 both are based on a "pay-as-you-go" charging model,  and the results for some comparable storage classes are shown below. The prices shown in \autoref{tab:object_pricing} are for the US East (N.Virginia) S3 region and East US 2 Blob region. Blob Storage also takes into account the redundancy method used when presenting the prices and, for Blob, the flat structure namespace option was selected~\cite{s3_pricing,blob_pricing}.
 
 \begin{table}[!h]
+	\caption{\label{tab:object_pricing}Object Storage Pricing Sample}
     \resizebox{\textwidth}{!}{%
         \begin{tabular}{|llll|}
             \hline
@@ -388,7 +389,7 @@ Azure Blob and S3 both are based on a "pay-as-you-go" charging model,  and the r
             Free \\ \hline
             \multicolumn{1}{|l|}{Other Requests} & \multicolumn{1}{l|}{\$0.001 per 1,000 requests} & \multicolumn{1}{l|}{\$0.004 per 10,000 requests} & \$0.004 per 10,000 requests \\ \hline
         \end{tabular}%
-    }\caption{\label{tab:object_pricing}Object Storage Pricing Sample}
+    }
 \end{table}
 
 It can be observed from ~\autoref{tab:object_pricing} that, in general, S3 and Blob prices are similar, with Blob Cool Tier LRS overall being a bit cheaper than S3-IA, and GRS being the most expensive of the three. However, this is only a sample, and the cost-efficiency of each service can only be determined after extensive analysis and careful consideration of various factors like the storage classes and redundancy options selected, workloads to be carried out and more.
@@ -409,6 +410,8 @@ In terms of \textbf{scalability}, all 3 services are comparable, supporting most
 
 
 \begin{table}[]
+	    \caption{Dropbox Pricing}
+	\label{tab:Dropbox_Pricing}
     \resizebox{\textwidth}{!}{%
         \begin{tabular}{|l|c|c|c|c|c|}
             \hline
@@ -438,11 +441,11 @@ In terms of \textbf{scalability}, all 3 services are comparable, supporting most
             \textbf{\begin{tabular}[c]{@{}l@{}}Phone support during\\ business hours\end{tabular}} &  &  &  & Yes & Yes \\ \hline
         \end{tabular}%
     }
-    \caption{Dropbox Pricing}
-    \label{tab:Dropbox_Pricing}
 \end{table}
 
 \begin{table}[]
+	    \caption{Box Pricing}
+	\label{tab:Box_Pricing}
     \resizebox{\textwidth}{!}{%
         \begin{tabular}{|l|c|c|c|c|c|}
             \hline
@@ -464,11 +467,11 @@ In terms of \textbf{scalability}, all 3 services are comparable, supporting most
             \textbf{Customer support} & Business hours & Business hours & Business hours & Business hours & 24/7/365 Support \\ \hline
         \end{tabular}%
     }
-    \caption{Box Pricing}
-    \label{tab:Box_Pricing}
 \end{table}
 
-\begin{table}[!b]
+\begin{table}[]
+	    \caption{Google Drive Pricing}
+	\label{tab:Drive_Pricing}
     \resizebox{\textwidth}{!}{%
         \begin{tabular}{|l|c|c|c|c|}
             \hline
@@ -492,8 +495,6 @@ In terms of \textbf{scalability}, all 3 services are comparable, supporting most
             \textbf{Customer support} & Standard support & Standard support & Standard support & Enhanced support \\ \hline
         \end{tabular}%
     }
-    \caption{Google Drive Pricing}
-    \label{tab:Drive_Pricing}
 \end{table}
 
 \subsection{File Sharing}
@@ -602,6 +603,8 @@ The work carried out in~\cite{personal1} led to the following conclusions:
 \end{description}
 
 \section{Conclusions}
-Overall, both of the object storage services investigated (S3 and Blob Storage) are very similar in some aspects, and yet quite different in others. Specifically, they both provide functionality to make storage management more convenient, as they allow key-value pairs to be attached to objects (S3 object tags and blob index tags) and inventory reports to be generated, providing an overview of the user's stored data. Both services also support the monitoring and logging of resource usage, however S3 is more sophisticated in this regard, providing organization-level insight into storage access patterns via S3 Storage Lens, and making recommendations for when storage class transitions should be made via S3 Storage Class Analysis. When it comes to storage classes, even though both S3 and Blob Storage feature a variety of storage classes to suit different access patterns, only S3 has classes that allow automatic transition to different access tiers when it is cost-efficient (S3 Intelligent-Tiering) , and also allow for on-site data storage (S3 Outposts). On the other hand, Blob Storage lacks these options and its archival tier has certain limitations, as not all accounts can make use of it. To enforce data redundancy,  both services support data replication, even across different regions, but neither one can be considered the better option. To illustrate, while Blob Storage promises better durability via the Service-level agreement (SLA) compared to S3 (16 9's vs 11 9's of durability), blob's redundancy settings are account-wide, while S3 allows for even object-level specification and has a SLA backing replication speed with S3 Replication Time Control. Such differences are not present in the Availability SLAs of these services, though, as they both promise similar availability (specified with monthly uptime percentage), with the main differences being that Blob Storage specifies availability for reads and writes, while S3 offers full (100\% Service Credit) compensation if availability is significantly low. Furthermore, for security, the two services support both client-side and server-side encryption for data in transit (along with enforcement of HTTPS /TLS) and for data at rest, with blob having an advantage with double encryption (encryption at the service and infrastructure level) and a potential disadvantage if the two storage account keys aren't properly managed. A variety of access control mechanisms are also made available by both services, and they are equally strong, with the only exception being that Blob Storage does not support resource-based access policies. Also comparable are the options that are offered to protect and recover from accidental data deletions and modifications, with both services allowing for different versions of objects/blobs to be maintained and locks to be placed at various levels, thus preventing data modifications. Performance-wise, there are no significant differences in latency between the services however, regarding throughput, S3 performs better for large files ($>=$100MB), while Blob Storage is more capable for smaller files. Additionally, though upload speeds are stable for both services, download speeds with certain S3 servers in particular were not consistent whatsoever, while connection overhead was found to be much higher when using Blob Storage, due to the establishment of separate connections for each file upload.  Both services apply a "pay-as-you-go" payment model and, from the sample that we gathered, prices are comparable for similar access tiers, but Blob seems to charge 25\% less than expected. 
+Overall, both of the object storage services investigated (S3 and Blob Storage) are very similar in some aspects, and yet quite different in others. Specifically, they both provide functionality to make storage management more convenient, as they allow key-value pairs to be attached to objects (S3 object tags and blob index tags) and inventory reports to be generated, providing an overview of the user's stored data. Both services also support the monitoring and logging of resource usage, however S3 is more sophisticated in this regard, providing organization-level insight into storage access patterns via S3 Storage Lens, and making recommendations for when storage class transitions should be made via S3 Storage Class Analysis. When it comes to storage classes, even though both S3 and Blob Storage feature a variety of storage classes to suit different access patterns, only S3 has classes that allow automatic transition to different access tiers when it is cost-efficient (S3 Intelligent-Tiering), and also allow for on-site data storage (S3 Outposts). On the other hand, Blob Storage lacks these options and its archival tier has certain limitations, as not all accounts can make use of it. To enforce data redundancy,  both services support data replication, even across different regions, but neither one can be definitively considered the better option. To illustrate, while Blob Storage promises better durability via the Service-level agreement (SLA) compared to S3 (16 9's vs 11 9's of durability), blob's redundancy settings are account-wide, while S3 allows for even object-level specification and has a SLA backing replication speed with S3 Replication Time Control. Such differences are not present in the Availability SLAs of these services, though, as they both promise similar availability (specified with monthly uptime percentage), with the main differences being that Blob Storage specifies availability for reads and writes, while S3 offers full (100\% Service Credit) compensation if availability is significantly low. Furthermore, for security, the two services support both client-side and server-side encryption for data in transit (along with enforcement of HTTPS /TLS) and for data at rest, with Blob Storage having an advantage with double encryption (encryption at the service and infrastructure level) and a potential disadvantage if the two storage account keys aren't properly managed. A variety of access control mechanisms are also made available by both services, and they are equally strong, with the only exception being that Blob Storage does not support resource-based access policies. Also comparable are the options that are offered to protect and recover from accidental data deletions and modifications, with both services allowing for different versions of objects/blobs to be maintained and locks to be placed at various levels, thus preventing data modifications. Performance-wise, there are no significant differences in latency between the services however, regarding throughput, S3 performs better for large files ($>=$100MB), while Blob Storage is more capable for smaller files. Additionally, though upload speeds are stable for both services, download speeds with certain S3 servers in particular were not consistent whatsoever, while connection overhead was found to be much higher when using Blob Storage, due to the establishment of separate connections for each file upload.  Both services apply a "pay-as-you-go" payment model and, from the sample that we gathered, prices are comparable for similar access tiers, but Blob seems to charge 25\% less than expected. 
 
-Many similarities and differences were also observed after comparing three popular file storage providers (Dropbox, Box and Google Drive). All services offer a variety of pricing plans to customers, ranging from very expensive custom plans to free, albeit limited, plans. Box was found to be the most expensive of the three overall, but it did not limit storage space for most of its plans, while Google Drive's plans were the most cost-efficient, as they include all Google Workspace applications. Google Drive was also found to be the most scalable service, allowing files of up to 5 TB to be uploaded at a time, compared to the 2 TB and 150 GB limit of Dropbox and Box, respectively, but all of them supported every file type along with unlimited users, storage and devices with at least one of their offered plans.  File sharing, which is one of the primary benefits of file storage, is supported by the three services via shared links which can be sent to anyone, customized with specific access permissions, expiration dates etc. for secure sharing.  In this aspect, only Google Drive was found lacking, as it provides no way to gather files from various people.  Real-time collaboration is also facilitated , as each service has its own collaboration solution (Dropbox Paper, Box Notes, Google Docs), where users can preview and work on all kinds of files  (e.g., text and video), make comments, and assign tasks. Of the three, Dropbox Paper is the most sophisticated, allowing annotations to be made even on videos, whereas Google Docs does not provide nearly as much flexibility when embedding and annotating media. All services integrate with many third-party apps like Zoom or Slack, enhancing productivity. With regard to security and data protection, each of the services uses sophisticated encryption for data both in transit and at rest, with Google Drive also supporting encryption at the client-side, while each service maintains a large number of file version to revert back if needed. Furthermore, all services provide strong admin controls (generate audit logs, view alerts etc.), mechanisms for controlling which devices can access data based on password, minimum OS , location and other requirements, along with malware detection. Dropbox Vault  and Box Zones are features unique to those services, with the former providing an extra secure PIN-protected folder, and the latter allowing data protection and privacy compliance requirements to be met by allowing customers to specify in which region the data should be stored. To optimize performance, the services make use of certain client capabilities such as bundling, chunking, and delta encoding. Dropbox is the service with the largest amount of implemented capabilities, whereas Box only implements chunking, and its performance suffers as a result. Specifically, Dropbox is the best-performing when it came to synchronization start up of small files and upload/download duration, while Box was consistently the slowest, except for traffic overhead of small files, where it performed the best due to having no advanced capabilities. In all other cases, Dropbox and Google Drive performed comparably well. 
+Many similarities and differences were also observed after comparing three popular file storage services (Dropbox, Box and Google Drive). All services offer a variety of pricing plans to customers, ranging from very expensive custom plans to free, albeit limited, plans. Box was found to be the most expensive of the three overall, but it did not limit storage space for most of its plans, while Google Drive's plans were the most cost-efficient, as they include all Google Workspace applications. Google Drive was also found to be the most scalable service, allowing files of up to 5 TB to be uploaded at a time, compared to the 2 TB and 150 GB limit of Dropbox and Box, respectively, but all of them supported every file type along with unlimited users, storage and devices with at least one of their offered plans.  File sharing, which is one of the primary benefits of file storage, is supported by the three services via shared links which can be sent to anyone, customized with specific access permissions, expiration dates etc. for secure sharing.  In this aspect, only Google Drive was found lacking, as it provides no way to gather files from various people.  Real-time collaboration is also facilitated , as each service has its own collaboration solution (Dropbox Paper, Box Notes, Google Docs), where users can preview and work on all kinds of files  (e.g., text and video), make comments, and assign tasks. Of the three, Dropbox Paper is the most sophisticated, allowing annotations to be made even on videos, whereas Google Docs does not provide nearly as much flexibility when embedding and annotating media. All services integrate with many third-party apps like Zoom or Slack, enhancing productivity. With regard to security and data protection, each of the services uses sophisticated encryption for data both in transit and at rest, with Google Drive also supporting encryption at the client-side, while each service maintains a large number of file versions to revert back if needed. Furthermore, all services provide strong admin controls (generate audit logs, view alerts etc.), mechanisms for controlling which devices can access data based on password, minimum OS , location and other requirements, along with malware detection. Dropbox Vault  and Box Zones are features unique to those services, with the former providing an extra secure PIN-protected folder, and the latter allowing data protection and privacy compliance requirements to be met by allowing customers to specify in which region the data should be stored. To optimize performance, the services make use of certain client capabilities such as bundling, chunking, and delta encoding. Dropbox is the service with the largest amount of implemented capabilities, whereas Box only implements chunking, and its performance suffers as a result. Specifically, Dropbox is the best-performing when it came to synchronization start up of small files and upload/download duration, while Box was consistently the slowest, except for traffic overhead of small files, where it performed the best due to having no advanced capabilities. In all other cases, Dropbox and Google Drive performed comparably well. 
+
+Therefore, because of these and many other difference among the various cloud storage services, users might desire, or be required, to use more than one of them at a time. This was the primary motivator for the development of our library, aiming to provide a common interface for interacting with various cloud storage services. With our library, cloud storage users would not be limited in their options, as they would not be encumbered by the need to learn and switch among many different interfaces.

@@ -4,6 +4,8 @@
 In order to evaluate the performance of our library, we measured the time required to upload, download and delete files which ranged from 1MB to 1GB in size. We executed all 3 operations on each file size (1MB, 5MB, 10MB, 50MB, 100MB, 500MB, 1000MB = 1GB), for each service (Dropbox, Box, Google Drive, S3), 5 times, and then calculated and recorded the mean duration. The specifications of the computer and network used to make the API calls and measure execution time are detailed in \autoref{tab:pc_specs}. Furthermore, chunked uploads were used across all services, with a chunk size of 32MB. The only exception to this was Box, as it automatically determined the optimal chunk size which was, however, 32MB for larger files ($>$100MB). Finally, no warm-up time was used for this evaluation.
 
 \begin{table}[!h]
+	    \caption{PC and Network Specifications}
+	\label{tab:pc_specs}
     \centering
     \begin{tabular}{|
             >{\columncolor[HTML]{EFEFEF}}l |l|}
@@ -14,8 +16,6 @@ In order to evaluate the performance of our library, we measured the time requir
         \textbf{Storage}          & 1TB NVMe SSD                                    \\ \hline
         \textbf{Network}          & 100Mbps download and 10Mbps upload via Ethernet \\ \hline
     \end{tabular}
-    \caption{PC and Network Specifications}
-    \label{tab:pc_specs}
 \end{table}
 
 \section{Upload Duration}
@@ -34,31 +34,35 @@ The results on upload duration are depicted in \autoref{fig:upload_duration} and
 \end{figure}
 
 \section{Download Duration}
+
+\begin{figure} [!h]
+	\centering
+	\includegraphics[scale=0.6]{images/download_chart}
+	\caption{\label{fig:download_duration}Download Duration}
+\end{figure}
+
+\begin{figure} [!h]
+	\centering
+	\includegraphics[scale=0.6]{images/download_log_chart}
+	\caption{\label{fig:download_log_duration}Download Duration (log scale)}
+\end{figure}
+
 As shown in \autoref{fig:download_duration} and \autoref{fig:download_log_duration}, the differences in download times aren't as significant. All services perform roughly the same for files that do not go over 100MB in size. However, among all the services, Dropbox is the fastest for small to medium-sized files ($< 100$MB). For larger files ($ >$100MB), though, S3 takes the first place as it is consistently faster than Dropbox up until 1GB file size is reached, at which point both services achieve a roughly equal performance. The other two services (Box and Google Drive) are slower by 10--30s for files larger than 100MB. It is worth noting here that Google Drive was the only service which supported, and required, chunked downloads, but this didn't appear to cause any significant deviation in performance. Overall, S3 and Dropbox were the fastest when downloading, with 134s and 137s, respectively, for a 1GB file whereas Google Drive took 150s. Box was the slowest, with an upload speed of 162s for the same 1GB file.
 
-\begin{figure} [!h]
-    \centering
-    \includegraphics[scale=0.6]{images/download_chart}
-    \caption{\label{fig:download_duration}Download Duration}
-\end{figure}
 
-\begin{figure} [!h]
-    \centering
-    \includegraphics[scale=0.6]{images/download_log_chart}
-    \caption{\label{fig:download_log_duration}Download Duration (log scale)}
-\end{figure}
+\pagebreak
 
 \section{Deletion Duration}
 The results shown in \autoref{fig:deletion_duration} and \autoref{fig:deletion_log_duration} make it clear that all services perform nearly identically when it comes to deletion duration. Regardless of the file size, Dropbox, Box and Google Drive all take around 1s to successfully delete a file, with a negligible variation of around 0.5s. Box was consistently slower than all services, but the difference was quite insignificant (usually less than 1s)
 
 \begin{figure} [!h]
     \centering
-    \includegraphics[scale=0.5]{images/deletion_chart}
+    \includegraphics[scale=0.6]{images/deletion_chart}
     \caption{\label{fig:deletion_duration}Deletion Duration}
 \end{figure}
 
 \begin{figure} [!h]
     \centering
-    \includegraphics[scale=0.5]{images/deletion_log_chart}
+    \includegraphics[scale=0.6]{images/deletion_log_chart}
     \caption{\label{fig:deletion_log_duration}Deletion Duration (log scale)}
 \end{figure}

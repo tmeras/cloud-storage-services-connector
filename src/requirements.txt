@@ -1,0 +1,9 @@
+bottle
+termcolor
+dropbox
+box
+boxsdk
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+boto3

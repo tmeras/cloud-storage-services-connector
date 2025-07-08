@@ -54,5 +54,5 @@ python main.py dropbox upload -lp ../../test -rp /
 
 If the user has not previously authorised the library to access their data that is stored on a cloud provider, an OAuth2 flow will automatically start in the browser.
 
-The only exception is **Amazon S3**, which requires additional setup. Before the library can interact with S3 buckets, authentication using the AWS CLI must be configured, as explained [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html).
+The only exception is **Amazon S3**, which requires additional setup. Before the library can interact with S3 buckets, authentication using the AWS CLI must be configured, as explained [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html). **NOTE: The default profile will be used**
    
